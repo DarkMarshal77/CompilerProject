@@ -5,7 +5,7 @@ from CONFIG import *
 class CodeGen(Transformer):
     def __init__(self):
         super().__init__()
-        self.ST = dict()
+        self.ST = INIT_ST
         self.ss = []
 
     def add_to_st(self, args):
@@ -16,15 +16,15 @@ class CodeGen(Transformer):
             print("Double Declaration")
             quit()
         if args[0] == "integer":
-            self.ST[id] = {"type": "integer", "size": INT_SIZE}
+            self.ST[id] = {"type": "SIGNED_INT", "size": INT_SIZE}
         elif args[0] == "string":
-            self.ST[id] = {"type": "string"}
+            self.ST[id] = {"type": "ESCAPED_STRING"}
         elif args[0] == "real":
-            self.ST[id] = {"type": "real", "size": REAL_SIZE}
+            self.ST[id] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE}
         elif args[0] == "character":
-            self.ST[id] = {"type": "character", "size": CHAR_SIZE}
+            self.ST[id] = {"type": "CHARACTER", "size": CHAR_SIZE}
         elif args[0] == "boolean":
-            self.ST[id] = {"type": "character", "size": BOOL_SIZE}
+            self.ST[id] = {"type": "BOOL", "size": BOOL_SIZE}
 
     def integer_push(self, args):
         return "integer"

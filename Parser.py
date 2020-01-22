@@ -105,7 +105,7 @@ id: CNAME ->id
     | "real" -> real_push
     | "string" -> string_push
     | "boolean" -> boolean_push
-    | "character" -> character_push
+    | "char" -> character_push
 
 loop: "while" "(" expr ")" "do" block
 
@@ -130,11 +130,13 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-real c;
+real b;
+char c;
+string s := "salam";
 if (9 + b(20)) then
 begin
-a := 10;
-string s := "salam";
+a := -10.941 + b;
+c := 't';
 end;
 end
 """).pretty())
