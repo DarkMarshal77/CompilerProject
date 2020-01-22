@@ -10,11 +10,11 @@ start: func_def start
 var_dcl: simple_var 
        | array_var
        
-simple_var: type id 
-          | type id assignment
+simple_var: type id assignment_prime -> add_to_st
+assignment_prime: assignment
+                | 
           
-array_var: "array" type id 
-         | "array" type id assignment
+array_var: "array" type id assignment_prime
          
 assignment: ":=" expr 
        
@@ -43,9 +43,9 @@ st: expr
 id_plus: "," id id_plus 
        | "," id
 // ___________________________________________ expression handling here
-op: constant
+op: constant -> push_ss
   | function_call
-  | id
+  | id -> push_ss
 
 // _______________________ or and
 expr: expr_or "or" expr
@@ -93,17 +93,19 @@ exprs: expr exprs_prime
 exprs_prime: "," expr exprs_prime
            | 
            
-id: CNAME
+id: CNAME ->id
 
-constant: SIGNED_INT
+?constant: SIGNED_INT
         | "0x" SIGNED_INT
         | SIGNED_FLOAT
         | ESCAPED_STRING
         | "\'" CHAR "\'"
 
-type: "integer"
-    | "real"
-    | "string"
+?type: "integer" -> integer_push
+    | "real" -> real_push
+    | "string" -> string_push
+    | "boolean" -> boolean_push
+    | "character" -> character_push
 
 loop: "while" "(" expr ")" "do" block
 
@@ -123,15 +125,24 @@ CHAR: /./
 %ignore WS
 """
 
-parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=True)
+parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
 print(parser.parse("""
-function main(integer a, string b) : integer
+function main() : integer
 begin
-if (9 + b(20)) then 
+real c;
+if (9 + b(20)) then
 begin
 a := 10;
+string s := "salam";
 end;
 end
 """).pretty())
+
+# print(parser.parse("""
+# function main() : integer
+# begin
+# a := b + c;
+# end
+# """).pretty())
 
