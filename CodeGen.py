@@ -7,6 +7,11 @@ class CodeGen(Transformer):
         super().__init__()
         self.ST = INIT_ST
         self.ss = []
+        self.pc = 0
+        self.dest = "main.ll"
+
+        file = open(self.dest, 'w')
+        file.close()
 
     def add_to_st(self, args):
         # todo allocations
