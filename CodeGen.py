@@ -5,7 +5,8 @@ from CONFIG import *
 class CodeGen(Transformer):
     def __init__(self):
         super().__init__()
-        self.ST = INIT_ST
+        self.ST_stack = [INIT_ST]
+        self.ST = self.ST_stack[-1]
         self.ss = []
         self.pc = 0
         self.dest = "main.ll"
@@ -17,9 +18,10 @@ class CodeGen(Transformer):
         # todo allocations
 
         id = str(args[1])
-        if id in self.ST:
-            print("Double Declaration")
-            quit()
+        for symbol_table in self.ST_stack:
+            if id in symbol_table:
+                print("Double Declaration")
+                quit()
         if args[0] == "integer":
             self.ST[id] = {"type": "SIGNED_INT", "size": INT_SIZE}
         elif args[0] == "string":
@@ -51,3 +53,6 @@ class CodeGen(Transformer):
 
     def push_ss(self, args):
         self.ss.append(args[0])
+
+    def empty_ss(self, args):
+        self.ss = []

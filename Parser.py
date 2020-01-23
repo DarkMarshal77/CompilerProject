@@ -29,8 +29,9 @@ args_prime: "," var_dcl args_prime
 
 block: "begin" stl "end"
 
-stl: st ";" stl
+stl: st ";" empty_ss stl
    | 
+empty_ss: -> empty_ss
 
 st: expr
   | "(" id id_plus ")" assignment
@@ -120,14 +121,22 @@ CHAR: /./
 %import common.SIGNED_INT
 %import common.SIGNED_FLOAT
 %import common.ESCAPED_STRING
+%import common.NEWLINE
 %import common.CNAME
 %import common.WS
 %ignore WS
+
+COMMENT: "<--" /(.|\\n|\\r)+/ "-->"    
+       | "--" /(.)+/ NEWLINE
+            %ignore COMMENT
 """
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
 print(parser.parse("""
+<-- salam salam
+hello world!
+-->
 function main() : integer
 begin
 real b;
@@ -137,6 +146,10 @@ if (9 + b(20)) then
 begin
 a := -10.941 + b;
 c := 't';
+end
+else begin 
+a := a + b;
+-- salamdsfadsjfkaldg
 end;
 end
 """).pretty())
