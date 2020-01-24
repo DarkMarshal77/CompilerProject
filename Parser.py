@@ -1,4 +1,5 @@
 from lark import Lark
+
 from CodeGen import CodeGen
 
 grammar = """
@@ -130,29 +131,29 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
        | "--" /(.)+/ NEWLINE
             %ignore COMMENT
 """
-
-parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
+codegen = CodeGen()
+parser = Lark(grammar, parser="lalr", transformer=codegen, debug=False)
 # parser = Lark(grammar)
-print(parser.parse("""
-<-- salam salam
-hello world!
--->
-function main() : integer
-begin
-real b;
-char c;
-string s := "salam";
-if (9 + b(20)) then
-begin
-a := -10.941 + b;
-c := 't';
-end
-else begin 
-a := a + b;
--- salamdsfadsjfkaldg
-end;
-end
-""").pretty())
+# print(parser.parse("""
+# <-- salam salam
+# hello world!
+# -->
+# function main() : integer
+# begin
+# real b;
+# char c;
+# string s := "salam";
+# if (9 + b(20)) then
+# begin
+# a := -10.941 + b;
+# c := 't';
+# end
+# else begin
+# a := a + b;
+# -- salamdsfadsjfkaldg
+# end;
+# end
+# """).pretty())
 
 # print(parser.parse("""
 # function main() : integer
@@ -161,3 +162,7 @@ end
 # end
 # """).pretty())
 
+CodeGen.main_begin(codegen)
+CodeGen.push_ss(codegen, 'ahff')
+CodeGen.write(codegen)
+CodeGen.main_end(codegen)
