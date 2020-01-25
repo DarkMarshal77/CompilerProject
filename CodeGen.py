@@ -4,6 +4,12 @@ from CONFIG import *
 from queue import Queue
 
 
+class Node:
+    def __init__(self, value, type):
+        self.value = value
+        self.type = type
+
+
 class CodeGen(Transformer):
     def __init__(self):
         super().__init__()
@@ -49,7 +55,7 @@ class CodeGen(Transformer):
         elif args[0] == "real":
             self.ST[id] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE}
         elif args[0] == "character":
-            self.ST[id] = {"type": "CHARACTER", "size": CHAR_SIZE}
+            self.ST[id] = {"type": "CHAR", "size": CHAR_SIZE}
         elif args[0] == "boolean":
             self.ST[id] = {"type": "BOOL", "size": BOOL_SIZE}
 
@@ -163,45 +169,115 @@ class CodeGen(Transformer):
         else:
             raise Exception('Unknown var type {}'.format(var_type))
 
+    def result_type_wrapper(self, op1, op2, op_type):
+        if op1.type == 'CNAME':
+            if op1.value not in self.ST:
+                if op1.value not in self.ST_stack[0]:
+                    raise Exception()
+                else:
+                    first_type = self.ST_stack[0][op1.value]['type']
+                    first_name = '@' + self.ST_stack[0][op1.value]['type']
+            else:
+                first_type = self.ST[op1.value]['type']
+                first_name = '%' + self.ST[op1.value]['type']
+        else:
+            first_type = op1.type
+            first_name = op1.value
+
+        if op2.type == 'CNAME':
+            if op2.value not in self.ST:
+                if op2.value not in self.ST_stack[0]:
+                    raise Exception()
+                else:
+                    second_type = self.ST_stack[0][op2.value]['type']
+                    second_name = '@' + self.ST_stack[0][op2.value]['type']
+            else:
+                second_type = self.ST[op2.value]['type']
+                second_name = '%' + self.ST[op2.value]['type']
+        else:
+            second_type = op2.type
+            second_name = op2.value
+
+        res_type = result_type(op_type, first_type, second_type)
+        return first_type, first_name, second_type, second_name, res_type
+
+    def type_cast(self, res_type, op_name, op_type):
+        if res_type == op_type:
+            return op_name
+
+        if res_type == 'SIGNED_INT':
+            if op_type == 'SIGNED_FLOAT':
+                self.tmp.write('%{} = fptosi double {} to i32'.format(self.temp_cnt, op_name))
+            else:
+                self.tmp.write('%{} = zext i8 {} to i32'.format(self.temp_cnt, op_name))
+
+            self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
+                                                     "name": '{}'.format(self.temp_cnt)}
+        elif res_type == 'SIGNED_FLOAT':
+            if op_type == 'SIGNED_INT':
+                self.tmp.write('%{} = sitofp i32 {} to double'.format(self.temp_cnt, op_name))
+            else:
+                self.tmp.write('%{} = sitofp i8 {} to double'.format(self.temp_cnt, op_name))
+
+            self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
+                                                     "name": '{}'.format(self.temp_cnt)}
+        elif res_type == 'BOOL':
+            pass
+        else:
+            raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
+
+        self.temp_cnt += 1
+        return '%' + str(self.temp_cnt-1)
+
+    def do_calc_operation(self, op1, op2, op_type):
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(op1, op2, op_type)
+
+        first_name = self.type_cast(res_type, first_name, first_type)
+        second_name = self.type_cast(res_type, second_name, second_type)
+        if res_type == 'SIGNED_INT':
+            if op_type == 'mod' or op_type == 'div':
+                op_type = 's' + op_type
+
+            self.tmp.write('%{} = {} nsw i32 {}, {}'.format(self.temp_cnt, op_type, first_name, second_name))
+            self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
+                                                     "name": '{}'.format(self.temp_cnt)}
+        elif res_type == 'SIGNED_FLOAT':
+            self.tmp.write('%{} = f{} double {}, {}'.format(self.temp_cnt, op_type, first_name, second_name))
+            self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
+                                                     "name": '{}'.format(self.temp_cnt)}
+
+        self.ss.append(Node('{}__'.format(self.temp_cnt), 'CNAME'))
+        self.temp_cnt += 1
+
     def add(self, args):
         second = self.ss.pop()
         first = self.ss.pop()
 
-        self.tmp.write('%{} = add i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
-        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
-                                                 "name": '%{}'.format(self.temp_cnt)}
-        self.ss.append('{}__'.format(self.temp_cnt))
-        self.temp_cnt += 1
+        self.do_calc_operation(first, second, 'add')
 
     def sub(self, args):
         second = self.ss.pop()
         first = self.ss.pop()
 
-        self.tmp.write('%{} = sub i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
-        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
-                                                 "name": '%{}'.format(self.temp_cnt)}
-        self.ss.append('{}__'.format(self.temp_cnt))
-        self.temp_cnt += 1
+        self.do_calc_operation(first, second, 'sub')
 
-    def mult(self, args):
+    def mul(self, args):
         second = self.ss.pop()
         first = self.ss.pop()
 
-        self.tmp.write('%{} = mul i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
-        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
-                                                 "name": '%{}'.format(self.temp_cnt)}
-        self.ss.append('{}__'.format(self.temp_cnt))
-        self.temp_cnt += 1
+        self.do_calc_operation(first, second, 'mul')
 
     def div(self, args):
         second = self.ss.pop()
         first = self.ss.pop()
 
-        self.tmp.write('%{} = sdiv i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
-        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
-                                                 "name": '%{}'.format(self.temp_cnt)}
-        self.ss.append('{}__'.format(self.temp_cnt))
-        self.temp_cnt += 1
+        self.do_calc_operation(first, second, 'div')
+
+    def mod(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_calc_operation(first, second, 'rem')
 
     def main_begin(self):
         self.tmp.write('define i32 @main() #0\n')
