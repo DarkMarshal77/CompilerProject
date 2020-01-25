@@ -176,10 +176,10 @@ class CodeGen(Transformer):
                     raise Exception()
                 else:
                     first_type = self.ST_stack[0][op1.value]['type']
-                    first_name = '@' + self.ST_stack[0][op1.value]['type']
+                    first_name = '@' + self.ST_stack[0][op1.value]['name']
             else:
                 first_type = self.ST[op1.value]['type']
-                first_name = '%' + self.ST[op1.value]['type']
+                first_name = '%' + self.ST[op1.value]['name']
         else:
             first_type = op1.type
             first_name = op1.value
@@ -190,10 +190,10 @@ class CodeGen(Transformer):
                     raise Exception()
                 else:
                     second_type = self.ST_stack[0][op2.value]['type']
-                    second_name = '@' + self.ST_stack[0][op2.value]['type']
+                    second_name = '@' + self.ST_stack[0][op2.value]['name']
             else:
                 second_type = self.ST[op2.value]['type']
-                second_name = '%' + self.ST[op2.value]['type']
+                second_name = '%' + self.ST[op2.value]['name']
         else:
             second_type = op2.type
             second_name = op2.value

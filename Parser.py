@@ -163,7 +163,8 @@ print(parser.parse("""
 function main() : integer
 begin
 integer a;
-a := 2 + 1;
+integer b;
+a := b + b;
 end
 """).pretty())
 
