@@ -14,7 +14,8 @@ class CodeGen(Transformer):
         self.ST = self.ST_stack[-1]
         self.ss = []
 
-        self.cont_cnt = 0
+        self.const_cnt = 0
+        self.temp_cnt = 1
         self.dcls = ''
         self.consts = ''
 
@@ -84,39 +85,113 @@ class CodeGen(Transformer):
         if 'declare i32 @printf(i8*, ...) #1' not in self.dcls:
             self.dcls += 'declare i32 @printf(i8*, ...) #1\n'
         if type(var) is int:
-            self.consts += '@.const{} = private constant [5 x i8] c"%d\\0A\\0D\\00"\n'.format(self.cont_cnt)
+            self.consts += '@.const{} = private constant [5 x i8] c"%d\\0A\\0D\\00"\n'.format(self.const_cnt)
             self.tmp.write(
-                '%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(self.cont_cnt))
-            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i32 {})\n'.format(self.cont_cnt, var))
-            self.cont_cnt += 1
+                '%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(self.const_cnt))
+            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i32 {})\n'.format(self.const_cnt, var))
+            self.const_cnt += 1
         elif type(var) is float:
-            self.consts += '@.const{} = private constant [5 x i8] c"%f\\0A\\0D\\00"\n'.format(self.cont_cnt)
+            self.consts += '@.const{} = private constant [5 x i8] c"%f\\0A\\0D\\00"\n'.format(self.const_cnt)
             self.tmp.write(
-                '%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(self.cont_cnt))
-            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, double {})\n'.format(self.cont_cnt, var))
-            self.cont_cnt += 1
+                '%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(self.const_cnt))
+            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, double {})\n'.format(self.const_cnt, var))
+            self.const_cnt += 1
         elif type(var) is str:
             if len(var) == 1:
-                self.consts += '@.const{} = private constant [5 x i8] c"%c\\0A\\0D\\00"\n'.format(self.cont_cnt)
+                self.consts += '@.const{} = private constant [5 x i8] c"%c\\0A\\0D\\00"\n'.format(self.const_cnt)
                 self.tmp.write('%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(
-                    self.cont_cnt))
-                self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i8 {})\n'.format(self.cont_cnt, ord(var)))
-                self.cont_cnt += 1
+                    self.const_cnt))
+                self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i8 {})\n'.format(self.const_cnt, ord(var)))
+                self.const_cnt += 1
             else:
-                self.consts += '@.const{} = private constant [5 x i8] c"%s\\0A\\0D\\00"\n'.format(self.cont_cnt)
+                self.consts += '@.const{} = private constant [5 x i8] c"%s\\0A\\0D\\00"\n'.format(self.const_cnt)
                 self.tmp.write('%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(
-                    self.cont_cnt))
-                self.cont_cnt += 1
-                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.cont_cnt, len(var) + 1,
+                    self.const_cnt))
+                self.const_cnt += 1
+                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(var) + 1,
                                                                                            var)
                 self.tmp.write(
                     '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                        len(var) + 1, self.cont_cnt))
-                self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i8* %var_str_ptr{})\n'.format(self.cont_cnt - 1,
-                                                                                                      self.cont_cnt))
-                self.cont_cnt += 1
+                        len(var) + 1, self.const_cnt))
+                self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i8* %var_str_ptr{})\n'.format(self.const_cnt - 1,
+                                                                                                      self.const_cnt))
+                self.const_cnt += 1
         else:
             raise Exception('Unknown var type {}'.format(type(var)))
+
+    def read(self, args):
+        if args not in self.ST.keys():
+            raise Exception('Error: {} is not declare in this scope.'.format(args))
+
+        var_name = self.ST[args]['name']
+        var_type = self.ST[args]['type']
+        if 'declare i32 @scanf(i8*, ...) #1' not in self.dcls:
+            self.dcls += 'declare i32 @scanf(i8*, ...) #1\n'
+        if var_type == 'SIGNED_INT':
+            self.consts += '@.const{} = private constant [5 x i8] c"%d\\0A\\0D\\00"\n'.format(self.const_cnt)
+            self.tmp.write(
+                '%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(self.const_cnt))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i32* {})\n'.format(self.const_cnt, var_name))
+            self.const_cnt += 1
+        elif var_type == 'SIGNED_FLOAT':
+            self.consts += '@.const{} = private constant [5 x i8] c"%f\\0A\\0D\\00"\n'.format(self.const_cnt)
+            self.tmp.write(
+                '%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(self.const_cnt))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, double* {})\n'.format(self.const_cnt, var_name))
+            self.const_cnt += 1
+        elif var_type == 'CHAR':
+            self.consts += '@.const{} = private constant [5 x i8] c"%c\\0A\\0D\\00"\n'.format(self.const_cnt)
+            self.tmp.write('%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                self.const_cnt))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i8* {})\n'.format(self.const_cnt, var_name))
+            self.const_cnt += 1
+        elif var_type == 'ESCAPED_STRING':
+            self.consts += '@.const{} = private constant [5 x i8] c"%s\\0A\\0D\\00"\n'.format(self.const_cnt)
+            self.tmp.write('%str{0} = getelementptr inbounds [5 x i8], [5 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                self.const_cnt))
+            self.tmp.write('%{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
+                self.temp_cnt, STRING_MAX_SIZE, var_name))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i8* %{})\n'.format(self.const_cnt, self.temp_cnt))
+            self.const_cnt += 1
+            self.temp_cnt += 1
+        else:
+            raise Exception('Unknown var type {}'.format(var_type))
+
+    def add(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.tmp.write('%{} = add i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
+        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE, "name": '%{}'.format(self.temp_cnt)}
+        self.ss.append('{}__'.format(self.temp_cnt))
+        self.temp_cnt += 1
+
+    def sub(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.tmp.write('%{} = sub i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
+        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE, "name": '%{}'.format(self.temp_cnt)}
+        self.ss.append('{}__'.format(self.temp_cnt))
+        self.temp_cnt += 1
+
+    def mult(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.tmp.write('%{} = mul i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
+        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE, "name": '%{}'.format(self.temp_cnt)}
+        self.ss.append('{}__'.format(self.temp_cnt))
+        self.temp_cnt += 1
+
+    def div(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.tmp.write('%{} = sdiv i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
+        self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE, "name": '%{}'.format(self.temp_cnt)}
+        self.ss.append('{}__'.format(self.temp_cnt))
+        self.temp_cnt += 1
 
     def main_begin(self):
         self.tmp.write('define i32 @main() #0\n')
