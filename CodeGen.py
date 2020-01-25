@@ -10,6 +10,7 @@ class CodeGen(Transformer):
         super().__init__()
         atexit.register(self.cleanup)
         self.ST_stack = [INIT_ST]
+        self.ST_stack = [INIT_ST.copy()]
         self.ST = self.ST_stack[-1]
         self.ss = []
 
@@ -37,7 +38,10 @@ class CodeGen(Transformer):
         id = str(args[1])
         for symbol_table in self.ST_stack:
             if id in symbol_table:
-                print("Double Declaration")
+                if id in INIT_ST:
+                    print("'", id, "' is a reserved name. Try another name for your variable.")
+                else:
+                    print("Double declaration of '", id, "'")
                 quit()
         if args[0] == "integer":
             self.ST[id] = {"type": "SIGNED_INT", "size": INT_SIZE}
@@ -69,7 +73,8 @@ class CodeGen(Transformer):
         return args[0]
 
     def push_ss(self, args):
-        self.ss.append(args)
+        self.ss.append(args[0])
+        print(self.ss)
 
     def empty_ss(self, args):
         self.ss = []

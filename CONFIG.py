@@ -8,7 +8,7 @@ Null = "\00"
 types = ["SIGNED_INT", "ESCAPED_STRING", "SIGNED_FLOAT", "CHARACTER", "BOOL"]
 
 type_convert = {"SIGNED_INT": "i" + str(INT_SIZE * 8),
-                "SIGNED_FLOAT": "float",
+                "SIGNED_FLOAT": "double",
                 "CHARACTER": "i1",
                 "BOOL": "i1"
                 }
