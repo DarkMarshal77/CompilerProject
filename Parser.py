@@ -47,7 +47,7 @@ id_plus: "," id id_plus
 // ___________________________________________ expression handling here
 op: constant -> push_ss
   | function_call
-  | id -> push_ss
+  | id
 
 // _______________________ or and
 expr: expr_or "or" expr
@@ -74,12 +74,12 @@ e_eq: e_lg ">" e_eq
     | e_lg
 
 // _______________________ + - / * % - ~
-e_lg: t "+" e_and
-     | t "-" e_and
+e_lg: t "+" e_and -> add
+     | t "-" e_and -> sub
      | t
-t: f "*" t
- | f "/" t
- | f "%" t
+t: f "*" t -> mult
+ | f "/" t -> div
+ | f "%" t -> mod
  | f
 f: "-" p
  | "~" p
@@ -88,14 +88,16 @@ p: op
  | "(" e ")"
 
 // ___________________________________________________________________
-function_call: id "(" exprs ")"
+function_call: id push_q "(" exprs ")" -> function_call
 
-exprs: expr exprs_prime
+push_q: -> push_q
+
+exprs: expr exprs_prime -> pop_ss_push_q
      | 
 exprs_prime: "," expr exprs_prime
            | 
            
-id: CNAME ->id
+id: CNAME -> id
 
 ?constant: SIGNED_INT
         | "0x" SIGNED_INT
@@ -134,34 +136,35 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
-print(parser.parse("""
-<-- salam salam
-hello world!
--->
-function main() : integer
-begin
-real b;
-integer a;
-char c;
-string s := "salam";
-if (9 + b(20)) then
-begin
-a := -10.941 + b;
-c := 't';
-end
-else begin 
-a := a + b;
--- salamdsfadsjfkaldg;
-end;
-end
-""").pretty())
 
 # print(parser.parse("""
+# <-- salam salam
+# hello world!
+# -->
 # function main() : integer
 # begin
-# a := b + c;
+# real b;
+# integer a;
+# char c;
+# string s := "salam";
+# if (9 + b(20)) then
+# begin
+# a := -10.941 + b;
+# c := 't';
+# end
+# else begin
+# a := a + b;
+# -- salamdsfadsjfkaldg;
+# end;
 # end
 # """).pretty())
+
+print(parser.parse("""
+function main() : integer
+begin
+a + 1.0;
+end
+""").pretty())
 
 
 

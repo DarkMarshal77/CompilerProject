@@ -34,6 +34,12 @@ INIT_ST = {"array": {},
            "string": {},
            "while": {},
            "var": {},
+           "write": {},
+           "read": {},
            "false": {"type": "BOOL", "size": BOOL_SIZE},
            "true": {"type": "BOOL", "size": BOOL_SIZE}
            }
+
+def result_type(operation, type1, type2):
+    if (operation, type1, type2) == 1
+        return
