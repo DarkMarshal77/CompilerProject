@@ -63,7 +63,7 @@ e_or: e_xor "^" e_or
 e_xor: e_and "&" e_xor
      | e_and
      
-// _______________________ >= > < <=
+// _______________________ >= > < <= == <>
 e_and: e_eq "==" e_and
      | e_eq "<>" e_and
      | e_eq
@@ -131,7 +131,7 @@ CHAR: /./
 
 COMMENT: "<--" /(.|\\n|\\r)+/ "-->"    
        | "--" /(.)+/ NEWLINE
-            %ignore COMMENT
+%ignore COMMENT
 """
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
@@ -162,7 +162,8 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-a + 1.0;
+integer a;
+a := 2 + 1;
 end
 """).pretty())
 

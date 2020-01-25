@@ -81,7 +81,6 @@ class CodeGen(Transformer):
     def write(self):
         # todo print variable
         var = self.ss.pop()
-        print(var.type)
         if 'declare i32 @printf(i8*, ...) #1' not in self.dcls:
             self.dcls += 'declare i32 @printf(i8*, ...) #1\n'
         if var.type == "SIGNED_INTEGER":
@@ -167,8 +166,6 @@ class CodeGen(Transformer):
     def add(self, args):
         second = self.ss.pop()
         first = self.ss.pop()
-        print(first.value, first.type)
-        print(second.value, second.type)
 
         self.tmp.write('%{} = add i32 {}, {}'.format(self.temp_cnt, self.ST[first]['name'], self.ST[second]['name']))
         self.ST['{}__'.format(self.temp_cnt)] = {"type": "SIGNED_INT", "size": INT_SIZE,
