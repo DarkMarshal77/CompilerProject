@@ -77,7 +77,7 @@ e_eq: e_lg ">" e_eq
 e_lg: t "+" e_and -> add
      | t "-" e_and -> sub
      | t
-t: f "*" t -> mult
+t: f "*" t -> mul
  | f "/" t -> div
  | f "%" t -> mod
  | f
@@ -163,8 +163,12 @@ print(parser.parse("""
 function main() : integer
 begin
 integer a;
-integer b;
-a := b + b;
+char b;
+a := a + b;
+a := a - b;
+a := a * b;
+a := a / b;
+a := a % b;
 end
 """).pretty())
 

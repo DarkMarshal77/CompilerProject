@@ -11,8 +11,11 @@ types = ["SIGNED_INT", "ESCAPED_STRING", "SIGNED_FLOAT", "CHAR", "BOOL"]
 type_convert = {"SIGNED_INT": "i" + str(INT_SIZE * 8),
                 "SIGNED_FLOAT": "double",
                 "CHAR": "i8",
-                "BOOL": "i8"
+                "BOOL": "i8",
+                "ESCAPED_STRING": "i8*",
                 }
+
+var_sign = ['@', '%']
 
 INIT_ST = {"array": {},
            "assign": {},
@@ -44,7 +47,7 @@ unary_op = ["-", "~"]
 
 OP_NAME_TO_SIGN = {"add": "+",
                    "sub": "-",
-                   "mult": "*",
+                   "mul": "*",
                    "div": "/",
                    "rem": "%",
                    }
