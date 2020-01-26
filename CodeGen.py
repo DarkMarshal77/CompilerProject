@@ -277,6 +277,16 @@ class CodeGen(Transformer):
                 return 'false' if int(float(op_name)) == 0 else 'true'
             elif op_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
+
+        elif res_type == 'CHAR':
+            if op_type == 'SIGNED_INT':
+                return op_name
+            elif op_type == 'BOOL':
+                return '1' if op_name == 'true' else '0'
+            elif op_type == 'SIGNED_FLOAT':
+                return str(int(float(op_name)))
+            elif op_type == 'ESCAPED_STRING':
+                raise Exception('ERROR: Unable to cast string')
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
@@ -287,6 +297,7 @@ class CodeGen(Transformer):
         if const:
             return self.const_type_cast(res_type, op_name, op_type)
 
+        # todo: incomplete
         if res_type == 'SIGNED_INT':
             if op_type == 'SIGNED_FLOAT':
                 self.tmp.write('{}{} = fptosi double {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_name))
