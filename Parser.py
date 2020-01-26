@@ -164,7 +164,7 @@ function main() : integer
 begin
 integer a;
 integer b;
-a := b + 1;
+a := b;
 end
 """).pretty())
 

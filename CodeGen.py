@@ -191,7 +191,7 @@ class CodeGen(Transformer):
         else:
             raise Exception('Unknown var type {}'.format(var_type))
 
-    def operand_fetch(self, op):
+    def operand_fetch(self, op, get_value):
         if op.type == 'CNAME':
             if self.scope_level == 0 or op.value not in self.ST_stack[self.scope_level]:
                 if op.value not in self.ST_stack[0]:
@@ -202,18 +202,20 @@ class CodeGen(Transformer):
                         op_name = '@' + self.ST_stack[0][op.value]['name']
                     else:
                         op_name = '@' + self.ST_stack[0][op.value]['ptr_name']
-                        self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
-                        op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
-                        self.temp_cnt[self.scope_level] += 1
+                        if get_value is True:
+                            self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
+                            op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
+                            self.temp_cnt[self.scope_level] += 1
             else:
                 op_type = self.ST[op.value]['type']
                 if self.ST[op.value]['is_temp']:
                     op_name = '%' + self.ST[op.value]['name']
                 else:
                     op_name = '%' + self.ST[op.value]['ptr_name']
-                    self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
-                    op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
-                    self.temp_cnt[self.scope_level] += 1
+                    if get_value is True:
+                        self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
+                        op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
+                        self.temp_cnt[self.scope_level] += 1
         else:
             op_type = op.type
             op_name = op.value
@@ -335,25 +337,12 @@ class CodeGen(Transformer):
         self.ss[-1].put(temp)
 
     def assignment(self, args):
-        # todo type casting
         rhs = self.ss.pop()
         lhs = self.ss.pop()
-        lhs_scope = None
-        rhs_scope = None
-        llvm_type = None
-        if len(self.ST_stack) == 1:
-            if lhs not in self.ST:
-                raise Exception("Global variable has not been defined")
-            lhs_scope = "@"
-            llvm_type = type_convert[self.ST_stack[0][lhs.value]["type"]]
-        else:
-            if lhs in self.ST_stack[1]:
-                lhs_scope = "@"
-                llvm_type = type_convert[self.ST_stack[1][lhs.value]["type"]]
-            elif lhs in self.ST_stack[0]:
-                lhs_scope = "%"
-                llvm_type = type_convert[self.ST_stack[0][lhs.value]["type"]]
-            else:
-                raise Exception("Variable has not been definde")
 
+        lhs_type, lhs_name = self.operand_fetch(lhs, False)
+        rhs_type, rhs_name = self.operand_fetch(rhs, True)
 
+        rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type)
+
+        self.tmp.write('store {0} {1}, {0}* {2}'.format(type_convert[lhs_type], rhs_name, lhs_name))
