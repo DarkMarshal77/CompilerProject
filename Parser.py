@@ -5,15 +5,16 @@ from CodeGen import CodeGen
 grammar = """
 start: func_def start
      | proc_def start
-     | var_dcl start
+     | var_dcl ";" start
      |
 
-var_dcl: simple_var 
+var_dcl: simple_var
        | array_var
        
-simple_var: type id assignment_prime -> add_to_st
-assignment_prime: assignment 
-                | 
+simple_var: type id add_to_st assignment_prime
+add_to_st: -> add_to_st
+assignment_prime: assignment
+                |
           
 array_var: "array" type id assignment_prime
          
@@ -85,7 +86,7 @@ f: "-" p
  | "~" p
  | p
 p: op
- | "(" e ")"
+ | "(" expr ")"
 
 // ___________________________________________________________________
 function_call: id push_q "(" exprs ")" -> function_call
@@ -163,8 +164,7 @@ print(parser.parse("""
 function main() : integer
 begin
 integer a;
-integer b;
-a := b;
+write(5);
 end
 """).pretty())
 

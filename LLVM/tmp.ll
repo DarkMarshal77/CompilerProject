@@ -1,4 +1,3 @@
 @a_ptr = global i32 0
-@b_ptr = global i32 0
-@0 = load i32, i32* @b_ptr
-store i32 @0, i32* @a_ptr
+%str0 = getelementptr inbounds [3 x i8], [3 x i8]* @.const0, i32 0, i32 0
+call i32 (i8*, ...) @printf(i8* %str0, i32 5)

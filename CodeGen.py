@@ -39,61 +39,69 @@ class CodeGen(Transformer):
         main.close()
 
     def add_to_st(self, args):
-        id = str(args[1])
+        var = self.ss.pop()
+        type = self.ss.pop()
+        self.ss.append(var)
+
         for symbol_table in self.ST_stack:
-            if id in symbol_table:
-                if id in INIT_ST:
-                    print("'", id, "' is a reserved name. Try another name for your variable.")
+            if var.value in symbol_table:
+                if var.value in INIT_ST:
+                    print("'", var.value, "' is a reserved name. Try another name for your variable.")
                 else:
-                    print("Double declaration of '", id, "'")
+                    print("Double declaration of '", var.value, "'")
                 quit()
 
-        if args[0] == "integer":
+        if type == "SIGNED_INT":
             if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global i32 0\n'.format(id))
+                self.tmp.write('@{}_ptr = global i32 0\n'.format(var.value))
             else:
-                self.tmp.write('%{}_ptr = alloca i32\n'.format(id))
-            self.ST[id] = {"type": "SIGNED_INT", "size": INT_SIZE, "ptr_name": id+'_ptr', "is_temp": False}
-        elif args[0] == "string":
+                self.tmp.write('%{}_ptr = alloca i32\n'.format(var.value))
+            self.ST[var.value] = {"type": "SIGNED_INT", "size": INT_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+        elif type == "ESCAPED_STRING":
             if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer 0\n'.format(id, STRING_MAX_SIZE))
+                self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer 0\n'.format(var.value, STRING_MAX_SIZE))
             else:
-                self.tmp.write('%{}_ptr = allca [{} x i8]\n'.format(id, STRING_MAX_SIZE))
-            self.ST[id] = {"type": "ESCAPED_STRING", "ptr_name": id+'_ptr', "is_temp": False}
-        elif args[0] == "real":
+                self.tmp.write('%{}_ptr = allca [{} x i8]\n'.format(var.value, STRING_MAX_SIZE))
+            self.ST[var.value] = {"type": "ESCAPED_STRING", "ptr_name": var.value+'_ptr', "is_temp": False}
+        elif type == "SIGNED_FLOAT":
             if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global double 0.0\n'.format(id))
+                self.tmp.write('@{}_ptr = global double 0.0\n'.format(var.value))
             else:
-                self.tmp.write('%{}_ptr = allca double\n'.format(id))
-            self.ST[id] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE, "ptr_name": id+'_ptr', "is_temp": False}
-        elif args[0] == "character":
+                self.tmp.write('%{}_ptr = allca double\n'.format(var.value))
+            self.ST[var.value] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+        elif type == "CHAR":
             if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global i8 0\n'.format(id))
+                self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
             else:
-                self.tmp.write('%{}_ptr = allca i8\n'.format(id))
-            self.ST[id] = {"type": "CHAR", "size": CHAR_SIZE, "ptr_name": id+'_ptr', "is_temp": False}
-        elif args[0] == "boolean":
+                self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
+            self.ST[var.value] = {"type": "CHAR", "size": CHAR_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+        elif type == "BOOL":
             if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global i8 0\n'.format(id))
+                self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
             else:
-                self.tmp.write('%{}_ptr = allca i8\n'.format(id))
-            self.ST[id] = {"type": "BOOL", "size": BOOL_SIZE, "ptr_name": id+'_ptr', "is_temp": False}
+                self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
+            self.ST[var.value] = {"type": "BOOL", "size": BOOL_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
         else:
-            raise Exception("ERROR: Invalid var type, type = {}".format(args[0]))
+            raise Exception("ERROR: Invalid var type, type = {}".format(type))
 
     def integer_push(self, args):
+        self.ss.append("SIGNED_INT")
         return "integer"
 
     def real_push(self, args):
+        self.ss.append("SIGNED_FLOAT")
         return "real"
 
     def string_push(self, args):
+        self.ss.append("ESCAPED_STRING")
         return "string"
 
     def character_push(self, args):
+        self.ss.append("CHAR")
         return "character"
 
     def boolean_push(self, args):
+        self.ss.append("BOOL")
         return "boolean"
 
     def id(self, args):
@@ -111,7 +119,7 @@ class CodeGen(Transformer):
         var = self.ss.pop()
         if 'declare i32 @printf(i8*, ...) #1' not in self.dcls:
             self.dcls += 'declare i32 @printf(i8*, ...) #1\n'
-        if var.type == "SIGNED_INTEGER":
+        if var.type == "SIGNED_INT":
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
