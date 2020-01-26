@@ -51,27 +51,27 @@ op: constant -> push_ss
   | id
 
 // _______________________ or and
-expr: expr_or "or" expr
+expr: expr_or "or" expr -> boolean_or
     | expr_or
-expr_or: e "and" expr_or
+expr_or: e "and" expr_or -> boolean_and
        | e
        
 // _______________________ | ^ & 
-e: e_or "|" e
+e: e_or "|" e -> bitwise_or
  | e_or
-e_or: e_xor "^" e_or
+e_or: e_xor "^" e_or -> bitwise_xor
     | e_xor
-e_xor: e_and "&" e_xor
+e_xor: e_and "&" e_xor -> bitwise_and
      | e_and
      
 // _______________________ >= > < <= == <>
-e_and: e_eq "==" e_and
-     | e_eq "<>" e_and
+e_and: e_eq "==" e_and -> comp_eq
+     | e_eq "<>" e_and -> comp_ne
      | e_eq
-e_eq: e_lg ">" e_eq
-    | e_lg ">=" e_eq
-    | e_lg "<" e_eq
-    | e_lg "<=" e_eq
+e_eq: e_lg ">" e_eq -> comp_gt
+    | e_lg ">=" e_eq -> comp_ge
+    | e_lg "<" e_eq -> comp_lt
+    | e_lg "<=" e_eq -> comp_le
     | e_lg
 
 // _______________________ + - / * % - ~
@@ -166,9 +166,11 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-real a;
-boolean b;
-a := 10.5 + b;
+integer a;
+integer b;
+integer c;
+a := b + c * 10;
+write (10);
 end
 """).pretty())
 
