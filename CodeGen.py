@@ -1,7 +1,7 @@
 import atexit
+from queue import Queue
 from lark import Transformer
 from CONFIG import *
-from queue import Queue
 
 
 class Node:
@@ -64,31 +64,33 @@ class CodeGen(Transformer):
                 self.tmp.write('@{}_ptr = global i32 0\n'.format(var.value))
             else:
                 self.tmp.write('%{}_ptr = alloca i32\n'.format(var.value))
-            self.ST[var.value] = {"type": "SIGNED_INT", "size": INT_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+            self.ST[var.value] = {"type": "SIGNED_INT", "size": INT_SIZE, "ptr_name": var.value + '_ptr',
+                                  "is_temp": False}
         elif type == "ESCAPED_STRING":
             if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer 0\n'.format(var.value, STRING_MAX_SIZE))
+                self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer\n'.format(var.value, STRING_MAX_SIZE))
             else:
                 self.tmp.write('%{}_ptr = allca [{} x i8]\n'.format(var.value, STRING_MAX_SIZE))
-            self.ST[var.value] = {"type": "ESCAPED_STRING", "ptr_name": var.value+'_ptr', "is_temp": False}
+            self.ST[var.value] = {"type": "ESCAPED_STRING", "ptr_name": var.value + '_ptr', "is_temp": False}
         elif type == "SIGNED_FLOAT":
             if self.scope_level == 0:
                 self.tmp.write('@{}_ptr = global double 0.0\n'.format(var.value))
             else:
                 self.tmp.write('%{}_ptr = allca double\n'.format(var.value))
-            self.ST[var.value] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+            self.ST[var.value] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE, "ptr_name": var.value + '_ptr',
+                                  "is_temp": False}
         elif type == "CHAR":
             if self.scope_level == 0:
                 self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
             else:
                 self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
-            self.ST[var.value] = {"type": "CHAR", "size": CHAR_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+            self.ST[var.value] = {"type": "CHAR", "size": CHAR_SIZE, "ptr_name": var.value + '_ptr', "is_temp": False}
         elif type == "BOOL":
             if self.scope_level == 0:
                 self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
             else:
                 self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
-            self.ST[var.value] = {"type": "BOOL", "size": BOOL_SIZE, "ptr_name": var.value+'_ptr', "is_temp": False}
+            self.ST[var.value] = {"type": "BOOL", "size": BOOL_SIZE, "ptr_name": var.value + '_ptr', "is_temp": False}
         else:
             raise Exception("ERROR: Invalid var type, type = {}".format(type))
 
@@ -160,84 +162,107 @@ class CodeGen(Transformer):
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
             self.const_cnt += 1
-            self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(opr_name) + 1,
-                                                                                       opr_name)
-            self.tmp.write(
-                '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                    len(opr_name) + 1, self.const_cnt))
-            self.tmp.write(
-                'call i32 (i8*, ...) @printf(i8* %str{}, i8* %var_str_ptr{})\n'.format(self.const_cnt - 1,
-                                                                                       self.const_cnt))
-            self.const_cnt += 1
+            if var.type == 'CNAME':
+                temp_cnt_ptr = 0 if self.scope_level == 0 else 1
+                self.tmp.write('%{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
+                    self.temp_cnt[temp_cnt_ptr], STRING_MAX_SIZE, opr_name))
+                self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i8* %{})\n'.format(self.const_cnt - 1,
+                                                                                          self.temp_cnt[temp_cnt_ptr]))
+                self.temp_cnt[temp_cnt_ptr] += 1
+            else:
+                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
+                                                                                           len(opr_name) + 1,
+                                                                                           opr_name)
+                self.tmp.write(
+                    '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
+                        len(opr_name) + 1, self.const_cnt))
+                self.tmp.write(
+                    'call i32 (i8*, ...) @printf(i8* %str{}, i8* %var_str_ptr{})\n'.format(self.const_cnt - 1,
+                                                                                           self.const_cnt))
+                self.const_cnt += 1
         else:
             raise Exception('Unknown var type {}'.format(opr_type))
 
-    def read(self, args):
-        # todo test
-        if args not in self.ST.keys():
-            raise Exception('Error: {} is not declare in this scope.'.format(args))
+    def read(self):
+        var = self.ss.pop()
+        if var.type != 'CNAME':
+            raise Exception('ERROR: Expected a variable name.')
 
-        var_name = self.ST[args]['name']
-        var_type = self.ST[args]['type']
+        opr_type, opr_name = self.operand_fetch(var, False)
         if 'declare i32 @scanf(i8*, ...) #1' not in self.dcls:
             self.dcls += 'declare i32 @scanf(i8*, ...) #1\n'
-        if var_type == 'SIGNED_INT':
+        if opr_type == 'SIGNED_INT':
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                     self.const_cnt))
-            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i32* {})\n'.format(self.const_cnt, var_name))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i32* {})\n'.format(self.const_cnt, opr_name))
             self.const_cnt += 1
-        elif var_type == 'SIGNED_FLOAT':
+        elif opr_type == 'SIGNED_FLOAT':
             self.consts += '@.const{} = private constant [3 x i8] c"%f\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                     self.const_cnt))
-            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, double* {})\n'.format(self.const_cnt, var_name))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, double* {})\n'.format(self.const_cnt, opr_name))
             self.const_cnt += 1
-        elif var_type == 'CHAR':
+        elif opr_type == 'CHAR':
             self.consts += '@.const{} = private constant [3 x i8] c"%c\\00"\n'.format(self.const_cnt)
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
-            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i8* {})\n'.format(self.const_cnt, var_name))
+            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i8* {})\n'.format(self.const_cnt, opr_name))
             self.const_cnt += 1
-        elif var_type == 'ESCAPED_STRING':
+        elif opr_type == 'ESCAPED_STRING':
+            temp_cnt_ptr = 0 if self.scope_level == 0 else 1
             self.consts += '@.const{} = private constant [3 x i8] c"%s\\00"\n'.format(self.const_cnt)
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
             self.tmp.write('%{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
-                self.temp_cnt[self.scope_level], STRING_MAX_SIZE, var_name))
-            self.tmp.write('call i32 (i8*, ...) @scanf(i8* %str{}, i8* %{})\n'.format(self.const_cnt, self.temp_cnt[self.scope_level]))
+                self.temp_cnt[temp_cnt_ptr], STRING_MAX_SIZE, opr_name))
+            self.tmp.write(
+                'call i32 (i8*, ...) @scanf(i8* %str{}, i8* %{})\n'.format(self.const_cnt, self.temp_cnt[temp_cnt_ptr]))
             self.const_cnt += 1
-            self.temp_cnt[self.scope_level] += 1
+            self.temp_cnt[temp_cnt_ptr] += 1
         else:
-            raise Exception('Unknown var type {}'.format(var_type))
+            raise Exception('Unknown var type {}'.format(opr_type))
 
     def operand_fetch(self, opr, get_value):
+        temp_cnt_ptr = 0 if self.scope_level == 0 else 1
         if opr.type == 'CNAME':
-            if self.scope_level == 0 or opr.value not in self.ST_stack[self.scope_level]:
+            found = False
+            level = self.scope_level
+            while level > 0:
+                if opr.value in self.ST_stack[level]:
+                    opr_descriptor = self.ST_stack[level][opr.value]
+                    opr_type = opr_descriptor['type']
+                    if opr_descriptor['is_temp']:
+                        opr_name = '%' + opr_descriptor['name']
+                    else:
+                        opr_name = '%' + opr_descriptor['ptr_name']
+                        if get_value is True and opr_type != 'ESCAPED_STRING':
+                            self.tmp.write('%{0} = load {1}, {1}* {2}\n'.format(self.temp_cnt[temp_cnt_ptr],
+                                                                                type_convert[opr_type], opr_name))
+                            opr_name = '%' + str(self.temp_cnt[temp_cnt_ptr])
+                            self.temp_cnt[temp_cnt_ptr] += 1
+                    found = True
+                    break
+                level -= 1
+
+            if found is False:
                 if opr.value not in self.ST_stack[0]:
                     raise Exception('ERROR: {} is not defined.'.format(opr.value))
                 else:
-                    opr_type = self.ST_stack[0][opr.value]['type']
-                    if self.ST_stack[0][opr.value]['is_temp']:
-                        opr_name = '@' + self.ST_stack[0][opr.value]['name']
+                    opr_descriptor = self.ST_stack[0][opr.value]
+                    opr_type = opr_descriptor['type']
+                    if opr_descriptor['is_temp']:
+                        opr_name = '@' + opr_descriptor['name']
                     else:
-                        opr_name = '@' + self.ST_stack[0][opr.value]['ptr_name']
-                        if get_value is True:
-                            self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[opr_type], opr_name))
-                            opr_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
-                            self.temp_cnt[self.scope_level] += 1
-            else:
-                opr_type = self.ST[opr.value]['type']
-                if self.ST[opr.value]['is_temp']:
-                    opr_name = '%' + self.ST[opr.value]['name']
-                else:
-                    opr_name = '%' + self.ST[opr.value]['ptr_name']
-                    if get_value is True:
-                        self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[opr_type], opr_name))
-                        opr_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
-                        self.temp_cnt[self.scope_level] += 1
+                        opr_name = '@' + opr_descriptor['ptr_name']
+                        if get_value is True and opr_type != 'ESCAPED_STRING':
+                            self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[temp_cnt_ptr],
+                                                                                  self.temp_cnt[temp_cnt_ptr],
+                                                                                  type_convert[opr_type], opr_name))
+                            opr_name = var_sign[temp_cnt_ptr] + str(self.temp_cnt[temp_cnt_ptr])
+                            self.temp_cnt[temp_cnt_ptr] += 1
         else:
             opr_type = opr.type
             opr_name = opr.value
@@ -304,53 +329,73 @@ class CodeGen(Transformer):
         if const:
             return self.const_type_cast(res_type, opr_name, opr_type)
 
+        temp_cnt_ptr = 0 if self.scope_level == 0 else 1
         if res_type == 'SIGNED_INT':
             if opr_type == 'SIGNED_FLOAT':
-                self.tmp.write('{}{} = fptosi double {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+                self.tmp.write(
+                    '{}{} = fptosi double {} to i32\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                              opr_name))
             else:
-                self.tmp.write('{}{} = zext i8 {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+                self.tmp.write(
+                    '{}{} = zext i8 {} to i32\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], opr_name))
 
         elif res_type == 'SIGNED_FLOAT':
             if opr_type == 'SIGNED_INT':
-                self.tmp.write('{}{} = sitofp i32 {} to double\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+                self.tmp.write(
+                    '{}{} = sitofp i32 {} to double\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                              opr_name))
             else:
-                self.tmp.write('{}{} = sitofp i8 {} to double\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+                self.tmp.write(
+                    '{}{} = sitofp i8 {} to double\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                             opr_name))
 
         elif res_type == 'BOOL':
             if opr_type == 'SIGNED_FLOAT':
-                self.tmp.write('{}{} = fcmp une double {}, 0.0\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+                self.tmp.write(
+                    '{}{} = fcmp une double {}, 0.0\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                              opr_name))
             else:
-                self.tmp.write('{}{} = icmp ne {} {}, 0\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[opr_type], opr_name))
-            opr_name = '{}{}'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level])
-            self.temp_cnt[self.scope_level] += 1
-            self.tmp.write('{}{} = zext i1 {} to i8\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+                self.tmp.write('{}{} = icmp ne {} {}, 0\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                                  type_convert[opr_type], opr_name))
+            opr_name = '{}{}'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr])
+            self.temp_cnt[temp_cnt_ptr] += 1
+            self.tmp.write(
+                '{}{} = zext i1 {} to i8\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], opr_name))
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
-        self.temp_cnt[self.scope_level] += 1
-        return var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level]-1)
+        self.temp_cnt[temp_cnt_ptr] += 1
+        return var_sign[temp_cnt_ptr] + str(self.temp_cnt[temp_cnt_ptr] - 1)
 
     def do_calc_operation(self, opr1, opr2, op_type):
-        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, op_type)
+        temp_cnt_ptr = 0 if self.scope_level == 0 else 1
 
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, op_type)
         first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
+
         if res_type == 'SIGNED_INT':
             if op_type == 'mod' or op_type == 'div':
                 op_type = 's' + op_type
 
-            self.tmp.write('{}{} = {} nsw i32 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
-            self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_INT", "size": INT_SIZE,
-                                                                       "name": '{}'.format(self.temp_cnt[self.scope_level]), "is_temp": True}
+            self.tmp.write(
+                '{}{} = {} nsw i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
+                                                    first_name, second_name))
+            self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
+                                                                   "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
+                                                                   "is_temp": True}
         elif res_type == 'SIGNED_FLOAT':
-            self.tmp.write('{}{} = f{} double {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
-            self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
-                                                                       "name": '{}'.format(self.temp_cnt[self.scope_level]), "is_temp": True}
+            self.tmp.write(
+                '{}{} = f{} double {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
+                                                    first_name, second_name))
+            self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
+                                                                   "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
+                                                                   "is_temp": True}
         else:
             raise Exception('do_calc_operation: Internal Error.')
 
-        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
-        self.temp_cnt[self.scope_level] += 1
+        self.ss.append(Node('{}__'.format(self.temp_cnt[temp_cnt_ptr]), 'CNAME'))
+        self.temp_cnt[temp_cnt_ptr] += 1
 
     def add(self, args):
         second = self.ss.pop()
@@ -383,18 +428,22 @@ class CodeGen(Transformer):
         self.do_calc_operation(first, second, 'rem')
 
     def do_bitwise_calc(self, opr1, opr2, op_type):
-        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, 'bitwise_'+op_type)
+        temp_cnt_ptr = 0 if self.scope_level == 0 else 1
 
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2,
+                                                                                              'bitwise_' + op_type)
         first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
-        self.tmp.write('{}{} = {} i32 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
-        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_INT",
-                                                                   "size": INT_SIZE,
-                                                                   "name": '{}'.format(self.temp_cnt[self.scope_level]),
-                                                                   "is_temp": True}
-        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
-        self.temp_cnt[self.scope_level] += 1
+        self.tmp.write(
+            '{}{} = {} i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type, first_name,
+                                            second_name))
+        self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT",
+                                                               "size": INT_SIZE,
+                                                               "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
+                                                               "is_temp": True}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[temp_cnt_ptr]), 'CNAME'))
+        self.temp_cnt[temp_cnt_ptr] += 1
 
     def bitwise_and(self, args):
         second = self.ss.pop()
@@ -415,21 +464,26 @@ class CodeGen(Transformer):
         self.do_bitwise_calc(first, second, 'xor')
 
     def do_boolean_calc(self, opr1, opr2, op_type):
-        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, 'boolean_'+op_type)
+        temp_cnt_ptr = 0 if self.scope_level == 0 else 1
 
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2,
+                                                                                              'boolean_' + op_type)
         first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
-        self.tmp.write('{}{} = {} i8 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
-        tmp_name = '{}{}'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level])
-        self.temp_cnt[self.scope_level] += 1
-        self.tmp.write('{}{} = trunc i8 {} to i1\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], tmp_name))
-        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "BOOL",
-                                                                   "size": BOOL_SIZE,
-                                                                   "name": '{}'.format(self.temp_cnt[self.scope_level]),
-                                                                   "is_temp": True}
-        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
-        self.temp_cnt[self.scope_level] += 1
+        self.tmp.write(
+            '{}{} = {} i8 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type, first_name,
+                                           second_name))
+        tmp_name = '{}{}'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr])
+        self.temp_cnt[temp_cnt_ptr] += 1
+        self.tmp.write(
+            '{}{} = trunc i8 {} to i1\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
+        self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
+                                                               "size": BOOL_SIZE,
+                                                               "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
+                                                               "is_temp": True}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[temp_cnt_ptr]), 'CNAME'))
+        self.temp_cnt[temp_cnt_ptr] += 1
 
     def boolean_and(self, args):
         second = self.ss.pop()
@@ -444,21 +498,26 @@ class CodeGen(Transformer):
         self.do_boolean_calc(first, second, 'or')
 
     def do_compare_calc(self, opr1, opr2, op_type):
-        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, op_type)
+        temp_cnt_ptr = 0 if self.scope_level == 0 else 1
 
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, op_type)
         first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
-        self.tmp.write('{}{} = {} {} {} {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], COMP_SIGN_TO_FLAG[res_type]['op'], COMP_SIGN_TO_FLAG[res_type][op_type], type_convert[res_type], first_name, second_name))
-        tmp_name = '{}{}'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level])
-        self.temp_cnt[self.scope_level] += 1
-        self.tmp.write('{}{} = zext i1 {} to i8\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], tmp_name))
-        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "BOOL",
-                                                                   "size": BOOL_SIZE,
-                                                                   "name": '{}'.format(self.temp_cnt[self.scope_level]),
-                                                                   "is_temp": True}
-        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
-        self.temp_cnt[self.scope_level] += 1
+        self.tmp.write('{}{} = {} {} {} {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                         COMP_SIGN_TO_FLAG[res_type]['op'],
+                                                         COMP_SIGN_TO_FLAG[res_type][op_type], type_convert[res_type],
+                                                         first_name, second_name))
+        tmp_name = '{}{}'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr])
+        self.temp_cnt[temp_cnt_ptr] += 1
+        self.tmp.write(
+            '{}{} = zext i1 {} to i8\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
+        self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
+                                                               "size": BOOL_SIZE,
+                                                               "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
+                                                               "is_temp": True}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[temp_cnt_ptr]), 'CNAME'))
+        self.temp_cnt[temp_cnt_ptr] += 1
 
     def comp_eq(self, args):
         second = self.ss.pop()
@@ -508,8 +567,8 @@ class CodeGen(Transformer):
         args = self.ss.pop()
         func_name = self.ss.pop()
         if str(func_name) == "read":
-            # todo read
-            return
+            self.ss.append(args.get())
+            self.read()
         elif str(func_name) == "write":
             self.ss.append(args.get())
             self.write()
