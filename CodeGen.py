@@ -48,6 +48,7 @@ class CodeGen(Transformer):
         var = self.ss.pop()
         type = self.ss.pop()
         self.ss.append(var)
+        print()
 
         for symbol_table in self.ST_stack:
             if var.value in symbol_table:
@@ -111,7 +112,10 @@ class CodeGen(Transformer):
         return "boolean"
 
     def id(self, args):
-        self.push_ss(args)
+        if args[0].value == 'true' or args[0].value == 'false':
+            self.ss.append(Node(args[0].value, 'BOOL'))
+        else:
+            self.push_ss(args)
         return args[0]
 
     def push_ss(self, args):
@@ -237,15 +241,51 @@ class CodeGen(Transformer):
         return op_type, op_name
 
     def result_type_wrapper(self, op1, op2, op_type):
-        first_type, first_name = self.operand_fetch(op1)
-        second_type, second_name = self.operand_fetch(op2)
+        first_type, first_name = self.operand_fetch(op1, True)
+        second_type, second_name = self.operand_fetch(op2, True)
 
         res_type = result_type(op_type, first_type, second_type)
         return first_type, first_name, second_type, second_name, res_type
 
-    def type_cast(self, res_type, op_name, op_type):
+    def const_type_cast(self, res_type, op_name, op_type):
+        if res_type == 'SIGNED_INT':
+            if op_type == 'SIGNED_FLOAT':
+                return str(int(float(op_name)))
+            elif op_type == 'BOOL':
+                return '1' if op_name == 'true' else '0'
+            elif op_type == 'ESCAPED_STRING':
+                raise Exception('ERROR: Unable to cast string')
+            else:
+                return str(ord(op_name))
+
+        elif res_type == 'SIGNED_FLOAT':
+            if op_type == 'BOOL':
+                return '1.0' if op_name == 'true' else '0.0'
+            elif op_type == 'ESCAPED_STRING':
+                raise Exception('ERROR: Unable to cast string')
+            elif op_type == 'SIGNED_INT':
+                return op_name + '.0'
+            else:
+                return str(ord(op_name)) + '.0'
+
+        elif res_type == 'BOOL':
+            if op_type == 'SIGNED_INT':
+                return 'false' if int(op_name) == 0 else 'true'
+            elif op_type == 'CHAR':
+                return 'false' if ord(op_name) == 0 else 'true'
+            elif op_type == 'SIGNED_FLOAT':
+                return 'false' if int(float(op_name)) == 0 else 'true'
+            elif op_type == 'ESCAPED_STRING':
+                raise Exception('ERROR: Unable to cast string')
+        else:
+            raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
+
+    def type_cast(self, res_type, op_name, op_type, const):
         if res_type == op_type:
             return op_name
+
+        if const:
+            return self.const_type_cast(res_type, op_name, op_type)
 
         if res_type == 'SIGNED_INT':
             if op_type == 'SIGNED_FLOAT':
@@ -270,8 +310,8 @@ class CodeGen(Transformer):
     def do_calc_operation(self, op1, op2, op_type):
         first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(op1, op2, op_type)
 
-        first_name = self.type_cast(res_type, first_name, first_type)
-        second_name = self.type_cast(res_type, second_name, second_type)
+        first_name = self.type_cast(res_type, first_name, first_type, False if op1.type == 'CNAME' else True)
+        second_name = self.type_cast(res_type, second_name, second_type, False if op1.type == 'CNAME' else True)
         if res_type == 'SIGNED_INT':
             if op_type == 'mod' or op_type == 'div':
                 op_type = 's' + op_type
@@ -357,7 +397,7 @@ class CodeGen(Transformer):
         lhs_type, lhs_name = self.operand_fetch(lhs, False)
         rhs_type, rhs_name = self.operand_fetch(rhs, True)
 
-        rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type)
+        rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
 
         self.tmp.write('store {0} {1}, {0}* {2}'.format(type_convert[lhs_type], rhs_name, lhs_name))
 

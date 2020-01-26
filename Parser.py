@@ -166,12 +166,9 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-boolean a := 1;
-
-if (a) then begin
-a := 2;
-end;
-
+real a;
+integer b;
+a := 'S' + 10;
 end
 """).pretty())
 
