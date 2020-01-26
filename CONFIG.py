@@ -45,6 +45,26 @@ INIT_ST = {"array": {},
 
 unary_op = ["-", "~"]
 
+COMP_SIGN_TO_FLAG = {"SIGNED_INT": {
+        "==": "eq",
+        "<>": "ne",
+        ">=": "sgt",
+        "<=": "sle",
+        ">": "sgt",
+        "<": "slt",
+        "op": "icmp",
+    },
+    "SIGNED_FLOAT": {
+        "==": "oeq",
+        "<>": "one",
+        ">=": "oge",
+        "<=": "ole",
+        ">": "ogt",
+        "<": "olt",
+        "op": "fcmp",
+    },
+}
+
 OP_NAME_TO_SIGN = {"add": "+",
                    "sub": "-",
                    "mul": "*",
@@ -55,6 +75,12 @@ OP_NAME_TO_SIGN = {"add": "+",
                    "bitwise_xor": "^",
                    "boolean_and": "and",
                    "boolean_or": "or",
+                   "==": "==",
+                   "<>": "<>",
+                   ">=": ">=",
+                   "<=": "<=",
+                   ">": ">",
+                   "<": "<",
                    }
 
 bitwise_op = ["|", "^", "&"]

@@ -440,6 +440,59 @@ class CodeGen(Transformer):
 
         self.do_boolean_calc(first, second, 'or')
 
+    def do_compare_calc(self, opr1, opr2, op_type):
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, op_type)
+
+        first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
+        second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
+
+        self.tmp.write('{}{} = {} {} {} {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], COMP_SIGN_TO_FLAG[res_type]['op'], COMP_SIGN_TO_FLAG[res_type][op_type], type_convert[res_type], first_name, second_name))
+        tmp_name = '{}{}'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level])
+        self.temp_cnt[self.scope_level] += 1
+        self.tmp.write('{}{} = zext i1 {} to i8\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], tmp_name))
+        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "BOOL",
+                                                                   "size": BOOL_SIZE,
+                                                                   "name": '{}'.format(self.temp_cnt[self.scope_level]),
+                                                                   "is_temp": True}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
+        self.temp_cnt[self.scope_level] += 1
+
+    def comp_eq(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_compare_calc(first, second, '==')
+
+    def comp_ne(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_compare_calc(first, second, '<>')
+
+    def comp_gt(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_compare_calc(first, second, '>')
+
+    def comp_ge(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_compare_calc(first, second, '>=')
+
+    def comp_lt(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_compare_calc(first, second, '<')
+
+    def comp_le(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_compare_calc(first, second, '<=')
+
     def main_begin(self):
         self.tmp.write('define i32 @main() #0\n')
         self.tmp.write('{\n')
