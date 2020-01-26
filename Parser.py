@@ -112,7 +112,9 @@ id: CNAME -> id
     | "boolean" -> boolean_push
     | "char" -> character_push
 
-loop: "while" "(" expr ")" "do" block
+loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin
+make_begin_label_loop: -> make_begin_label_loop
+branch_middle_loop: -> branch_middle_loop
 
 conditional: "if" "(" expr ")" jz "then" block ep
 
@@ -164,12 +166,14 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
+integer  d := 10;
 function main() : integer
 begin
 integer a;
 integer b;
 integer c;
 a := b + c * 10;
+integer e := 10 + a;
 write (10);
 end
 """).pretty())
