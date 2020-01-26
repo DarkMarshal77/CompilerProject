@@ -333,3 +333,27 @@ class CodeGen(Transformer):
     def pop_ss_push_q(self, args):
         temp = self.ss.pop()
         self.ss[-1].put(temp)
+
+    def assignment(self, args):
+        # todo type casting
+        rhs = self.ss.pop()
+        lhs = self.ss.pop()
+        lhs_scope = None
+        rhs_scope = None
+        llvm_type = None
+        if len(self.ST_stack) == 1:
+            if lhs not in self.ST:
+                raise Exception("Global variable has not been defined")
+            lhs_scope = "@"
+            llvm_type = type_convert[self.ST_stack[0][lhs.value]["type"]]
+        else:
+            if lhs in self.ST_stack[1]:
+                lhs_scope = "@"
+                llvm_type = type_convert[self.ST_stack[1][lhs.value]["type"]]
+            elif lhs in self.ST_stack[0]:
+                lhs_scope = "%"
+                llvm_type = type_convert[self.ST_stack[0][lhs.value]["type"]]
+            else:
+                raise Exception("Variable has not been definde")
+
+

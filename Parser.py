@@ -12,12 +12,12 @@ var_dcl: simple_var
        | array_var
        
 simple_var: type id assignment_prime -> add_to_st
-assignment_prime: assignment
+assignment_prime: assignment 
                 | 
           
 array_var: "array" type id assignment_prime
          
-assignment: ":=" expr 
+assignment: ":=" expr -> assignment
        
 func_def: "function" id "(" args ")" ":" type block
 
@@ -163,12 +163,8 @@ print(parser.parse("""
 function main() : integer
 begin
 integer a;
-char b;
-a := a + b;
-a := a - b;
-a := a * b;
-a := a / b;
-a := a % b;
+integer b;
+a := b + 1;
 end
 """).pretty())
 
