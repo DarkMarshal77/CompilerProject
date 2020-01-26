@@ -167,8 +167,8 @@ print(parser.parse("""
 function main() : integer
 begin
 real a;
-integer b;
-a := 'S' + 10;
+boolean b;
+a := 10.5 + b;
 end
 """).pretty())
 

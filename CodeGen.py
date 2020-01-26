@@ -17,6 +17,7 @@ class CodeGen(Transformer):
         self.ST_stack = [INIT_ST.copy()]
         self.ST = self.ST_stack[0]
         self.ss = []
+        self.label_stack = []
         self.label_counter = 0
 
         self.scope_level = 0
@@ -209,120 +210,128 @@ class CodeGen(Transformer):
         else:
             raise Exception('Unknown var type {}'.format(var_type))
 
-    def operand_fetch(self, op, get_value):
-        if op.type == 'CNAME':
-            if self.scope_level == 0 or op.value not in self.ST_stack[self.scope_level]:
-                if op.value not in self.ST_stack[0]:
-                    raise Exception('ERROR: {} is not defined.'.format(op.value))
+    def operand_fetch(self, opr, get_value):
+        if opr.type == 'CNAME':
+            if self.scope_level == 0 or opr.value not in self.ST_stack[self.scope_level]:
+                if opr.value not in self.ST_stack[0]:
+                    raise Exception('ERROR: {} is not defined.'.format(opr.value))
                 else:
-                    op_type = self.ST_stack[0][op.value]['type']
-                    if self.ST_stack[0][op.value]['is_temp']:
-                        op_name = '@' + self.ST_stack[0][op.value]['name']
+                    op_type = self.ST_stack[0][opr.value]['type']
+                    if self.ST_stack[0][opr.value]['is_temp']:
+                        op_name = '@' + self.ST_stack[0][opr.value]['name']
                     else:
-                        op_name = '@' + self.ST_stack[0][op.value]['ptr_name']
+                        op_name = '@' + self.ST_stack[0][opr.value]['ptr_name']
                         if get_value is True:
                             self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
                             op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
                             self.temp_cnt[self.scope_level] += 1
             else:
-                op_type = self.ST[op.value]['type']
-                if self.ST[op.value]['is_temp']:
-                    op_name = '%' + self.ST[op.value]['name']
+                op_type = self.ST[opr.value]['type']
+                if self.ST[opr.value]['is_temp']:
+                    op_name = '%' + self.ST[opr.value]['name']
                 else:
-                    op_name = '%' + self.ST[op.value]['ptr_name']
+                    op_name = '%' + self.ST[opr.value]['ptr_name']
                     if get_value is True:
                         self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
                         op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
                         self.temp_cnt[self.scope_level] += 1
         else:
-            op_type = op.type
-            op_name = op.value
+            op_type = opr.type
+            op_name = opr.value
 
         return op_type, op_name
 
-    def result_type_wrapper(self, op1, op2, op_type):
-        first_type, first_name = self.operand_fetch(op1, True)
-        second_type, second_name = self.operand_fetch(op2, True)
+    def result_type_wrapper(self, opr1, opr2, op_type):
+        first_type, first_name = self.operand_fetch(opr1, True)
+        second_type, second_name = self.operand_fetch(opr2, True)
 
         res_type = result_type(op_type, first_type, second_type)
         return first_type, first_name, second_type, second_name, res_type
 
-    def const_type_cast(self, res_type, op_name, op_type):
+    def const_type_cast(self, res_type, opr_name, opr_type):
         if res_type == 'SIGNED_INT':
-            if op_type == 'SIGNED_FLOAT':
-                return str(int(float(op_name)))
-            elif op_type == 'BOOL':
-                return '1' if op_name == 'true' else '0'
-            elif op_type == 'ESCAPED_STRING':
+            if opr_type == 'SIGNED_FLOAT':
+                return str(int(float(opr_name)))
+            elif opr_type == 'BOOL':
+                return '1' if opr_name == 'true' else '0'
+            elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
             else:
-                return str(ord(op_name))
+                return str(ord(opr_name))
 
         elif res_type == 'SIGNED_FLOAT':
-            if op_type == 'BOOL':
-                return '1.0' if op_name == 'true' else '0.0'
-            elif op_type == 'ESCAPED_STRING':
+            if opr_type == 'BOOL':
+                return '1.0' if opr_name == 'true' else '0.0'
+            elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
-            elif op_type == 'SIGNED_INT':
-                return op_name + '.0'
+            elif opr_type == 'SIGNED_INT':
+                return opr_name + '.0'
             else:
-                return str(ord(op_name)) + '.0'
+                return str(ord(opr_name)) + '.0'
 
         elif res_type == 'BOOL':
-            if op_type == 'SIGNED_INT':
-                return 'false' if int(op_name) == 0 else 'true'
-            elif op_type == 'CHAR':
-                return 'false' if ord(op_name) == 0 else 'true'
-            elif op_type == 'SIGNED_FLOAT':
-                return 'false' if int(float(op_name)) == 0 else 'true'
-            elif op_type == 'ESCAPED_STRING':
+            if opr_type == 'SIGNED_INT':
+                return 'false' if int(opr_name) == 0 else 'true'
+            elif opr_type == 'CHAR':
+                return 'false' if ord(opr_name) == 0 else 'true'
+            elif opr_type == 'SIGNED_FLOAT':
+                return 'false' if int(float(opr_name)) == 0 else 'true'
+            elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
 
         elif res_type == 'CHAR':
-            if op_type == 'SIGNED_INT':
-                return op_name
-            elif op_type == 'BOOL':
-                return '1' if op_name == 'true' else '0'
-            elif op_type == 'SIGNED_FLOAT':
-                return str(int(float(op_name)))
-            elif op_type == 'ESCAPED_STRING':
+            if opr_type == 'SIGNED_INT':
+                return opr_name
+            elif opr_type == 'BOOL':
+                return '1' if opr_name == 'true' else '0'
+            elif opr_type == 'SIGNED_FLOAT':
+                return str(int(float(opr_name)))
+            elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
-    def type_cast(self, res_type, op_name, op_type, const):
-        if res_type == op_type:
-            return op_name
+    def type_cast(self, res_type, opr_name, opr_type, const):
+        if res_type == opr_type:
+            return opr_name
+
+        if opr_type == 'ESCAPED_STRING':
+            raise Exception("ERROR: Illegal operand type")
 
         if const:
-            return self.const_type_cast(res_type, op_name, op_type)
+            return self.const_type_cast(res_type, opr_name, opr_type)
 
-        # todo: incomplete
         if res_type == 'SIGNED_INT':
-            if op_type == 'SIGNED_FLOAT':
-                self.tmp.write('{}{} = fptosi double {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_name))
+            if opr_type == 'SIGNED_FLOAT':
+                self.tmp.write('{}{} = fptosi double {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
             else:
-                self.tmp.write('{}{} = zext i8 {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_name))
+                self.tmp.write('{}{} = zext i8 {} to i32\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
 
         elif res_type == 'SIGNED_FLOAT':
-            if op_type == 'SIGNED_INT':
-                self.tmp.write('{}{} = sitofp i32 {} to double\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_name))
+            if opr_type == 'SIGNED_INT':
+                self.tmp.write('{}{} = sitofp i32 {} to double\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
             else:
-                self.tmp.write('{}{} = sitofp i8 {} to double\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_name))
+                self.tmp.write('{}{} = sitofp i8 {} to double\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
 
         elif res_type == 'BOOL':
-            pass
+            if opr_type == 'SIGNED_FLOAT':
+                self.tmp.write('{}{} = fcmp une double {}, 0.0\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
+            else:
+                self.tmp.write('{}{} = icmp ne {} {}, 0\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[opr_type], opr_name))
+            opr_name = '{}{}'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level])
+            self.temp_cnt[self.scope_level] += 1
+            self.tmp.write('{}{} = zext i1 {} to i8\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], opr_name))
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
         self.temp_cnt[self.scope_level] += 1
         return var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level]-1)
 
-    def do_calc_operation(self, op1, op2, op_type):
-        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(op1, op2, op_type)
+    def do_calc_operation(self, opr1, opr2, op_type):
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, op_type)
 
-        first_name = self.type_cast(res_type, first_name, first_type, False if op1.type == 'CNAME' else True)
-        second_name = self.type_cast(res_type, second_name, second_type, False if op1.type == 'CNAME' else True)
+        first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
+        second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
         if res_type == 'SIGNED_INT':
             if op_type == 'mod' or op_type == 'div':
                 op_type = 's' + op_type
@@ -367,6 +376,60 @@ class CodeGen(Transformer):
         first = self.ss.pop()
 
         self.do_calc_operation(first, second, 'rem')
+
+    def do_bitwise_calc(self, opr1, opr2, op_type):
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, 'bitwise_'+op_type)
+
+        first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
+        second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
+
+        self.tmp.write('{}{} = {} i32 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
+        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_INT",
+                                                                   "size": INT_SIZE,
+                                                                   "name": '{}'.format(self.temp_cnt[self.scope_level]),
+                                                                   "is_temp": True}
+
+    def bitwise_and(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_bitwise_calc(first, second, 'and')
+
+    def bitwise_or(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_bitwise_calc(first, second, 'or')
+
+    def bitwise_xor(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_bitwise_calc(first, second, 'xor')
+
+    def do_boolean_calc(self, opr1, opr2, op_type):
+        first_type, first_name, second_type, second_name, res_type = self.result_type_wrapper(opr1, opr2, 'boolean_'+op_type)
+
+        first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
+        second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
+
+        self.tmp.write('{}{} = {} i1 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
+        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_INT",
+                                                                   "size": INT_SIZE,
+                                                                   "name": '{}'.format(self.temp_cnt[self.scope_level]),
+                                                                   "is_temp": True}
+
+    def boolean_and(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_boolean_calc(first, second, 'and')
+
+    def boolean_or(self, args):
+        second = self.ss.pop()
+        first = self.ss.pop()
+
+        self.do_boolean_calc(first, second, 'or')
 
     def main_begin(self):
         self.tmp.write('define i32 @main() #0\n')

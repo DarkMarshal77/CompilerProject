@@ -50,6 +50,11 @@ OP_NAME_TO_SIGN = {"add": "+",
                    "mul": "*",
                    "div": "/",
                    "rem": "%",
+                   "bitwise_and": "&",
+                   "bitwise_or": "|",
+                   "bitwise_xor": "^",
+                   "boolean_and": "and",
+                   "boolean_or": "or",
                    }
 
 bitwise_op = ["|", "^", "&"]
