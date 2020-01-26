@@ -343,6 +343,8 @@ class CodeGen(Transformer):
             self.tmp.write('{}{} = f{} double {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
             self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
                                                                        "name": '{}'.format(self.temp_cnt[self.scope_level]), "is_temp": True}
+        else:
+            raise Exception('do_calc_operation: Internal Error.')
 
         self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
         self.temp_cnt[self.scope_level] += 1
@@ -388,6 +390,8 @@ class CodeGen(Transformer):
                                                                    "size": INT_SIZE,
                                                                    "name": '{}'.format(self.temp_cnt[self.scope_level]),
                                                                    "is_temp": True}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
+        self.temp_cnt[self.scope_level] += 1
 
     def bitwise_and(self, args):
         second = self.ss.pop()
@@ -413,11 +417,16 @@ class CodeGen(Transformer):
         first_name = self.type_cast(res_type, first_name, first_type, False if opr1.type == 'CNAME' else True)
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
-        self.tmp.write('{}{} = {} i1 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
-        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "SIGNED_INT",
-                                                                   "size": INT_SIZE,
+        self.tmp.write('{}{} = {} i8 {}, {}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], op_type, first_name, second_name))
+        tmp_name = '{}{}'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level])
+        self.temp_cnt[self.scope_level] += 1
+        self.tmp.write('{}{} = trunc i8 {} to i1\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], tmp_name))
+        self.ST['{}__'.format(self.temp_cnt[self.scope_level])] = {"type": "BOOL",
+                                                                   "size": BOOL_SIZE,
                                                                    "name": '{}'.format(self.temp_cnt[self.scope_level]),
                                                                    "is_temp": True}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[self.scope_level]), 'CNAME'))
+        self.temp_cnt[self.scope_level] += 1
 
     def boolean_and(self, args):
         second = self.ss.pop()
