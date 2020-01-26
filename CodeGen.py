@@ -17,6 +17,7 @@ class CodeGen(Transformer):
         self.ST_stack = [INIT_ST.copy()]
         self.ST = self.ST_stack[0]
         self.ss = []
+        self.label_counter = 0
 
         self.scope_level = 0
         self.const_cnt = 0
@@ -25,6 +26,11 @@ class CodeGen(Transformer):
         self.consts = ''
 
         self.tmp = open("LLVM/tmp.ll", 'w')
+
+    def get_label(self):
+        label = "L" + str(self.label_counter)
+        self.label_counter += 1
+        return label
 
     def cleanup(self):
         self.tmp.close()
@@ -126,7 +132,7 @@ class CodeGen(Transformer):
                     self.const_cnt))
             self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i32 {})\n'.format(self.const_cnt, var))
             self.const_cnt += 1
-        elif type(var) is float:
+        elif var.type is "SIGNED_FLOAT":
             self.consts += '@.const{} = private constant [3 x i8] c"%f\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
@@ -354,3 +360,17 @@ class CodeGen(Transformer):
         rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type)
 
         self.tmp.write('store {0} {1}, {0}* {2}'.format(type_convert[lhs_type], rhs_name, lhs_name))
+
+    def jz(self, args):
+        be = self.ss.pop()
+        print(self.ST[be.value])
+        pass
+
+    def cjz(self, args):
+        pass
+
+    def cjp(self, args):
+        pass
+
+    def jp_cjz(self, args):
+        pass

@@ -114,10 +114,13 @@ id: CNAME -> id
 
 loop: "while" "(" expr ")" "do" block
 
-conditional: "if" "(" expr ")" "then" block ep
+conditional: "if" "(" expr ")" jz "then" block ep
 
-ep: "else" block
-  | 
+jz: -> jz
+jp_cjz: -> jp_cjz
+
+ep: "else" jp_cjz block -> cjp
+  | -> cjz
  
 CHAR: /./
 
@@ -163,8 +166,12 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-integer a;
-write(5);
+boolean a := 1;
+
+if (a) then begin
+a := 2;
+end;
+
 end
 """).pretty())
 
