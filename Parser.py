@@ -168,7 +168,8 @@ function main() : integer
 begin
 real a;
 boolean b;
-a := 10.5 + b;
+write("DFFGFGF");
+a := 'c';
 end
 """).pretty())
 

@@ -22,7 +22,7 @@ class CodeGen(Transformer):
 
         self.scope_level = 0
         self.const_cnt = 0
-        self.temp_cnt = [0, 0]
+        self.temp_cnt = [0]
         self.dcls = ''
         self.consts = ''
 
@@ -120,54 +120,57 @@ class CodeGen(Transformer):
         return args[0]
 
     def push_ss(self, args):
+        if args[0].type == 'CHAR':
+            args[0].value = ord(args[0].value)
+        if args[0].type == 'ESCAPED_STRING':
+            args[0].value = args[0].value[1:-1]
         self.ss.append(args[0])
 
     def empty_ss(self, args):
         self.ss = []
 
     def write(self):
-        # todo print variable
         var = self.ss.pop()
+        opr_type, opr_name = self.operand_fetch(var, True)
+
         if 'declare i32 @printf(i8*, ...) #1' not in self.dcls:
             self.dcls += 'declare i32 @printf(i8*, ...) #1\n'
-        if var.type == "SIGNED_INT":
+        if opr_type == "SIGNED_INT":
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                     self.const_cnt))
-            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i32 {})\n'.format(self.const_cnt, var))
+            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i32 {})\n'.format(self.const_cnt, opr_name))
             self.const_cnt += 1
-        elif var.type is "SIGNED_FLOAT":
+        elif opr_type == "SIGNED_FLOAT":
             self.consts += '@.const{} = private constant [3 x i8] c"%f\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                     self.const_cnt))
-            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, double {})\n'.format(self.const_cnt, var))
+            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, double {})\n'.format(self.const_cnt, opr_name))
             self.const_cnt += 1
-        elif var.type == "CHAR":
+        elif opr_type == "CHAR":
             self.consts += '@.const{} = private constant [3 x i8] c"%c\\00"\n'.format(self.const_cnt)
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
-            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i8 {})\n'.format(self.const_cnt, ord(var)))
+            self.tmp.write('call i32 (i8*, ...) @printf(i8* %str{}, i8 {})\n'.format(self.const_cnt, opr_name))
             self.const_cnt += 1
-        elif var.type == "ESCAPED_STRING":
-            var = var[1: -1]
-
+        elif opr_type == "ESCAPED_STRING":
             self.consts += '@.const{} = private constant [3 x i8] c"%s\\00"\n'.format(self.const_cnt)
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
             self.const_cnt += 1
-            self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(var) + 1,
-                                                                                       var)
+            self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(opr_name) + 1,
+                                                                                       opr_name)
             self.tmp.write(
                 '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                    len(var) + 1, self.const_cnt))
+                    len(opr_name) + 1, self.const_cnt))
             self.tmp.write(
                 'call i32 (i8*, ...) @printf(i8* %str{}, i8* %var_str_ptr{})\n'.format(self.const_cnt - 1,
                                                                                        self.const_cnt))
             self.const_cnt += 1
         else:
-            raise Exception('Unknown var type {}'.format(type(var)))
+            raise Exception('Unknown var type {}'.format(opr_type))
 
     def read(self, args):
         # todo test
@@ -216,30 +219,30 @@ class CodeGen(Transformer):
                 if opr.value not in self.ST_stack[0]:
                     raise Exception('ERROR: {} is not defined.'.format(opr.value))
                 else:
-                    op_type = self.ST_stack[0][opr.value]['type']
+                    opr_type = self.ST_stack[0][opr.value]['type']
                     if self.ST_stack[0][opr.value]['is_temp']:
-                        op_name = '@' + self.ST_stack[0][opr.value]['name']
+                        opr_name = '@' + self.ST_stack[0][opr.value]['name']
                     else:
-                        op_name = '@' + self.ST_stack[0][opr.value]['ptr_name']
+                        opr_name = '@' + self.ST_stack[0][opr.value]['ptr_name']
                         if get_value is True:
-                            self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
-                            op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
+                            self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[opr_type], opr_name))
+                            opr_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
                             self.temp_cnt[self.scope_level] += 1
             else:
-                op_type = self.ST[opr.value]['type']
+                opr_type = self.ST[opr.value]['type']
                 if self.ST[opr.value]['is_temp']:
-                    op_name = '%' + self.ST[opr.value]['name']
+                    opr_name = '%' + self.ST[opr.value]['name']
                 else:
-                    op_name = '%' + self.ST[opr.value]['ptr_name']
+                    opr_name = '%' + self.ST[opr.value]['ptr_name']
                     if get_value is True:
-                        self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[op_type], op_name))
-                        op_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
+                        self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[self.scope_level], self.temp_cnt[self.scope_level], type_convert[opr_type], opr_name))
+                        opr_name = var_sign[self.scope_level] + str(self.temp_cnt[self.scope_level])
                         self.temp_cnt[self.scope_level] += 1
         else:
-            op_type = opr.type
-            op_name = opr.value
+            opr_type = opr.type
+            opr_name = opr.value
 
-        return op_type, op_name
+        return opr_type, opr_name
 
     def result_type_wrapper(self, opr1, opr2, op_type):
         first_type, first_name = self.operand_fetch(opr1, True)
@@ -257,7 +260,7 @@ class CodeGen(Transformer):
             elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
             else:
-                return str(ord(opr_name))
+                return str(opr_name)
 
         elif res_type == 'SIGNED_FLOAT':
             if opr_type == 'BOOL':
@@ -265,15 +268,15 @@ class CodeGen(Transformer):
             elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
             elif opr_type == 'SIGNED_INT':
-                return opr_name + '.0'
+                return str(opr_name) + '.0'
             else:
-                return str(ord(opr_name)) + '.0'
+                return str(opr_name) + '.0'
 
         elif res_type == 'BOOL':
             if opr_type == 'SIGNED_INT':
                 return 'false' if int(opr_name) == 0 else 'true'
             elif opr_type == 'CHAR':
-                return 'false' if ord(opr_name) == 0 else 'true'
+                return 'false' if int(opr_name) == 0 else 'true'
             elif opr_type == 'SIGNED_FLOAT':
                 return 'false' if int(float(opr_name)) == 0 else 'true'
             elif opr_type == 'ESCAPED_STRING':
@@ -281,7 +284,7 @@ class CodeGen(Transformer):
 
         elif res_type == 'CHAR':
             if opr_type == 'SIGNED_INT':
-                return opr_name
+                return str(opr_name)
             elif opr_type == 'BOOL':
                 return '1' if opr_name == 'true' else '0'
             elif opr_type == 'SIGNED_FLOAT':
@@ -535,7 +538,7 @@ class CodeGen(Transformer):
 
         rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
 
-        self.tmp.write('store {0} {1}, {0}* {2}'.format(type_convert[lhs_type], rhs_name, lhs_name))
+        self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
 
     def jz(self, args):
         be = self.ss.pop()
