@@ -652,3 +652,8 @@ class CodeGen(Transformer):
         self.tmp.write("br label %" + begin_label + "\n")
         self.tmp.write(out_label + ":\n")
 
+    def function_def(self, args):
+        pass
+
+    def push_st(self, args):
+        self.ST_stack.append(INIT_ST.copy())

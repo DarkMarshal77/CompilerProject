@@ -19,14 +19,16 @@ assignment_prime: assignment
 array_var: "array" type id assignment_prime
          
 assignment: ":=" expr -> assignment
-       
-func_def: "function" id "(" args ")" ":" type block
+
+func_def: "function" push_st id push_q "(" args ")" ":" type call_func_def block
+call_func_def: -> function_def
+push_st: -> push_st
 
 proc_def: "procedure" id "(" args ")" block
 
-args: var_dcl args_prime
+args: var_dcl args_prime -> pop_ss_push_q
     | 
-args_prime: "," var_dcl args_prime
+args_prime: "," var_dcl args_prime -> pop_ss_push_q
           | 
 
 block: "begin" stl "end"
@@ -166,24 +168,8 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
-function main() : integer
+function main(integer a) : integer
 begin
-
-integer a;
-integer b;
-if (a) then begin
-    a := 2;
-end
-else begin
-    a := 1;
-end;
-
---if(a + b) then begin
---    a := 1;
---end
---else begin
---    a := 2;
---end;
 
 end
 """).pretty())
