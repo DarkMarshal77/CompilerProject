@@ -54,9 +54,6 @@ class CodeGen(Transformer):
         type = self.ss.pop()
         self.ss.append(var)
 
-        if self.in_func_def:
-            return
-
         for symbol_table in self.ST_stack:
             if var.value in symbol_table:
                 if var.value in INIT_ST:

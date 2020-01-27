@@ -1,1 +1,2 @@
-@a_ptr = global i32 0
+define i32 @main(i32 %a_ptr)
+{
