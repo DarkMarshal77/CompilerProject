@@ -588,6 +588,7 @@ class CodeGen(Transformer):
         self.ss[-1].put(temp)
 
     def assignment(self, args):
+        # todo: sting assign and global assign
         rhs = self.ss.pop()
         lhs = self.ss.pop()
 
@@ -629,11 +630,14 @@ class CodeGen(Transformer):
 
     def branch_middle_loop(self, args):
         be = self.ss.pop()
-        # todo type cast and scope be
+
+        be_type, be_name = self.operand_fetch(be, True)
+        be_name = self.type_cast('BOOL', be_name, be_type, False if be.type == 'CNAME' else True)
+
         in_label = self.get_label()
         out_label = self.get_label()
         self.label_stack.append(out_label)
-        # todo self.tmp.write("br")
+        self.tmp.write('br i1 {}, label %{}, label %{}\n'.format(be_name, in_label, out_label))
         self.tmp.write(in_label + ":\n")
 
     def jp_begin_loop(self, args):
