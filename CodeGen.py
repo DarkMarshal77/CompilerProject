@@ -562,24 +562,6 @@ class CodeGen(Transformer):
         self.tmp.write('ret i32 0\n')
         self.tmp.write('}\n')
 
-    def function_call(self, args):
-        args = self.ss.pop()
-        func_name = self.ss.pop()
-        if str(func_name) == "read":
-            self.ss.append(args.get())
-            self.read()
-        elif str(func_name) == "write":
-            self.ss.append(args.get())
-            self.write()
-        elif str(func_name) == "strlen":
-            # todo strlen
-            return
-        elif str(func_name) in self.ST_stack[0]:
-            # todo func_call
-            return
-        else:
-            raise Exception("Error. Function has not been declared in this scope.")
-
     def push_q(self, args):
         self.ss.append(Queue())
 
@@ -652,8 +634,38 @@ class CodeGen(Transformer):
         self.tmp.write("br label %" + begin_label + "\n")
         self.tmp.write(out_label + ":\n")
 
+    def function_call(self, args):
+        args = self.ss.pop()
+        func_name = self.ss.pop()
+        if str(func_name) == "read":
+            self.ss.append(args.get())
+            self.read()
+        elif str(func_name) == "write":
+            self.ss.append(args.get())
+            self.write()
+        elif str(func_name) == "strlen":
+            # todo strlen
+            return
+        elif str(func_name) in self.ST_stack[0]:
+            # todo func_call
+            return
+        else:
+            raise Exception("Error. Function has not been declared in this scope.")
+
     def function_def(self, args):
-        pass
+        out_type = self.ss.pop()
+        args = self.ss.pop()
+        func_name = self.ss.pop()
+
+        func_args = ''
+        while len(args) > 1:
+            arg = args.get()
+            func_args += '{} {}, '.format(type_convert[arg.type], arg.value)
+        if len(args) == 1:
+            arg = args.get()
+            func_args += '{} {}'.format(type_convert[arg.type], arg.value)
+
+        self.tmp.write('define {} @{}({}) {'.format(type_convert[out_type], func_name, func_args))
 
     def push_st(self, args):
         self.ST_stack.append(INIT_ST.copy())
