@@ -28,10 +28,11 @@ in_func_def_false: -> in_func_def_false
 
 proc_def: "procedure" id "(" args ")" block
 
-args: var_dcl args_prime -> pop_ss_push_q
+args: var_dcl pop_ss_push_q args_prime
     | 
-args_prime: "," var_dcl args_prime -> pop_ss_push_q
+args_prime: "," var_dcl pop_ss_push_q args_prime
           | 
+pop_ss_push_q: -> pop_ss_push_q
 
 block: "begin" push_st stl "end" pop_st
 pop_st: -> pop_st
@@ -98,9 +99,9 @@ function_call: id push_q "(" exprs ")" -> function_call
 
 push_q: -> push_q
 
-exprs: expr exprs_prime -> pop_ss_push_q
+exprs: expr pop_ss_push_q exprs_prime
      | 
-exprs_prime: "," expr exprs_prime
+exprs_prime: "," expr pop_ss_push_q exprs_prime
            | 
            
 id: CNAME -> id
@@ -171,7 +172,8 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
-function main(integer a) : integer
+function main() : integer
 begin
+write(10);
 end
 """).pretty())

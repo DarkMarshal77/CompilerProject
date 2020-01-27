@@ -25,7 +25,7 @@ class CodeGen(Transformer):
         self.dcls = ''
         self.consts = ''
 
-        self.in_func_def = True
+        self.in_func_def = False
 
         self.tmp = open("LLVM/tmp.ll", 'w')
 
@@ -575,7 +575,6 @@ class CodeGen(Transformer):
         self.ss.append(Queue())
 
     def pop_ss_push_q(self, args):
-        print(self.ss)
         temp = self.ss.pop()
         self.ss[-1].put(temp)
 
