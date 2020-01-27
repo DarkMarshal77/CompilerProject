@@ -668,4 +668,10 @@ class CodeGen(Transformer):
         self.tmp.write('define {} @{}({}) {'.format(type_convert[out_type], func_name, func_args))
 
     def push_st(self, args):
-        self.ST_stack.append(INIT_ST.copy())
+        if type(self.ss[-1]) == dict:
+            self.ST_stack.append(self.ss.pop())
+        else:
+            self.ST_stack.append(INIT_ST.copy())
+
+    def pop(self, args):
+        self.ST_stack.pop()
