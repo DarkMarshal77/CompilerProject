@@ -31,7 +31,8 @@ args: var_dcl args_prime -> pop_ss_push_q
 args_prime: "," var_dcl args_prime -> pop_ss_push_q
           | 
 
-block: "begin" stl "end"
+block: "begin" push_st stl "end" pop_st
+pop_st: -> pop_st
 
 stl: st ";" empty_ss stl
    | 
