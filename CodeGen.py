@@ -15,7 +15,6 @@ class CodeGen(Transformer):
         super().__init__()
         atexit.register(self.cleanup)
         self.ST_stack = [INIT_ST.copy()]
-        self.ST = self.ST_stack[0]
         self.ss = []
         self.label_stack = []
         self.label_counter = 0
@@ -26,9 +25,12 @@ class CodeGen(Transformer):
         self.dcls = ''
         self.consts = ''
 
-        self.in_func_def = False
+        self.in_func_def = True
 
         self.tmp = open("LLVM/tmp.ll", 'w')
+
+    def ST(self):
+        return self.ST_stack[-1]
 
     def get_label(self):
         label = "L" + str(self.label_counter)
@@ -64,37 +66,42 @@ class CodeGen(Transformer):
                 quit()
 
         if type == "SIGNED_INT":
-            if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global i32 0\n'.format(var.value))
-            else:
-                self.tmp.write('%{}_ptr = alloca i32\n'.format(var.value))
-            self.ST[var.value] = {"type": "SIGNED_INT", "size": INT_SIZE, "ptr_name": var.value + '_ptr',
+            if not self.in_func_def:
+                if self.scope_level == 0:
+                    self.tmp.write('@{}_ptr = global i32 0\n'.format(var.value))
+                else:
+                    self.tmp.write('%{}_ptr = alloca i32\n'.format(var.value))
+            self.ST()[var.value] = {"type": "SIGNED_INT", "size": INT_SIZE, "ptr_name": var.value + '_ptr',
                                   "is_temp": False}
         elif type == "ESCAPED_STRING":
-            if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer\n'.format(var.value, STRING_MAX_SIZE))
-            else:
-                self.tmp.write('%{}_ptr = allca [{} x i8]\n'.format(var.value, STRING_MAX_SIZE))
-            self.ST[var.value] = {"type": "ESCAPED_STRING", "ptr_name": var.value + '_ptr', "is_temp": False}
+            if not self.in_func_def:
+                if self.scope_level == 0:
+                    self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer\n'.format(var.value, STRING_MAX_SIZE))
+                else:
+                    self.tmp.write('%{}_ptr = allca [{} x i8]\n'.format(var.value, STRING_MAX_SIZE))
+            self.ST()[var.value] = {"type": "ESCAPED_STRING", "ptr_name": var.value + '_ptr', "is_temp": False}
         elif type == "SIGNED_FLOAT":
-            if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global double 0.0\n'.format(var.value))
-            else:
-                self.tmp.write('%{}_ptr = allca double\n'.format(var.value))
-            self.ST[var.value] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE, "ptr_name": var.value + '_ptr',
+            if not self.in_func_def:
+                if self.scope_level == 0:
+                    self.tmp.write('@{}_ptr = global double 0.0\n'.format(var.value))
+                else:
+                    self.tmp.write('%{}_ptr = allca double\n'.format(var.value))
+            self.ST()[var.value] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE, "ptr_name": var.value + '_ptr',
                                   "is_temp": False}
         elif type == "CHAR":
-            if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
-            else:
-                self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
-            self.ST[var.value] = {"type": "CHAR", "size": CHAR_SIZE, "ptr_name": var.value + '_ptr', "is_temp": False}
+            if not self.in_func_def:
+                if self.scope_level == 0:
+                    self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
+                else:
+                    self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
+            self.ST()[var.value] = {"type": "CHAR", "size": CHAR_SIZE, "ptr_name": var.value + '_ptr', "is_temp": False}
         elif type == "BOOL":
-            if self.scope_level == 0:
-                self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
-            else:
-                self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
-            self.ST[var.value] = {"type": "BOOL", "size": BOOL_SIZE, "ptr_name": var.value + '_ptr', "is_temp": False}
+            if not self.in_func_def:
+                if self.scope_level == 0:
+                    self.tmp.write('@{}_ptr = global i8 0\n'.format(var.value))
+                else:
+                    self.tmp.write('%{}_ptr = allca i8\n'.format(var.value))
+            self.ST()[var.value] = {"type": "BOOL", "size": BOOL_SIZE, "ptr_name": var.value + '_ptr', "is_temp": False}
         else:
             raise Exception("ERROR: Invalid var type, type = {}".format(type))
 
@@ -385,14 +392,14 @@ class CodeGen(Transformer):
             self.tmp.write(
                 '{}{} = {} nsw i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
                                                     first_name, second_name))
-            self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
+            self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
                                                                    "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                    "is_temp": True}
         elif res_type == 'SIGNED_FLOAT':
             self.tmp.write(
                 '{}{} = f{} double {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
                                                     first_name, second_name))
-            self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
+            self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
                                                                    "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                    "is_temp": True}
         else:
@@ -442,7 +449,7 @@ class CodeGen(Transformer):
         self.tmp.write(
             '{}{} = {} i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type, first_name,
                                             second_name))
-        self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT",
+        self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT",
                                                                "size": INT_SIZE,
                                                                "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                "is_temp": True}
@@ -482,7 +489,7 @@ class CodeGen(Transformer):
         self.temp_cnt[temp_cnt_ptr] += 1
         self.tmp.write(
             '{}{} = trunc i8 {} to i1\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
-        self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
+        self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
                                                                "size": BOOL_SIZE,
                                                                "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                "is_temp": True}
@@ -516,7 +523,7 @@ class CodeGen(Transformer):
         self.temp_cnt[temp_cnt_ptr] += 1
         self.tmp.write(
             '{}{} = zext i1 {} to i8\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
-        self.ST['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
+        self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
                                                                "size": BOOL_SIZE,
                                                                "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                "is_temp": True}
