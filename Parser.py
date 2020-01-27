@@ -171,16 +171,19 @@ begin
 
 integer a;
 integer b;
---while (a + b) do begin
---    a := 2;
---end;
-
-if(a + b) then begin
-    a := 1;
+if (a) then begin
+    a := 2;
 end
 else begin
-    a := 2;
+    a := 1;
 end;
+
+--if(a + b) then begin
+--    a := 1;
+--end
+--else begin
+--    a := 2;
+--end;
 
 end
 """).pretty())

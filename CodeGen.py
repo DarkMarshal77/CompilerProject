@@ -601,19 +601,24 @@ class CodeGen(Transformer):
 
     def jz(self, args):
         be = self.ss.pop()
+
+        be_type, be_name = self.operand_fetch(be, True)
+        be_name = self.type_cast('BOOL', be_name, be_type, False if be.type == 'CNAME' else True)
+
         st1_label = self.get_label()
         st2_label = self.get_label()
         self.label_stack.append(st2_label)
-        # todo type cast and "br be"
+        self.tmp.write('br i1 {}, label %{}, label %{}\n'.format(be_name, st1_label, st2_label))
         self.tmp.write(st1_label + ":\n")
-        pass
 
     def cjz(self, args):
         st2_label = self.label_stack.pop()
+        self.tmp.write("br label %" + st2_label + "\n")
         self.tmp.write(st2_label + ":\n")
 
     def cjp(self, args):
         out_label = self.label_stack.pop()
+        self.tmp.write("br label %" + out_label + "\n")
         self.tmp.write(out_label + ":\n")
 
     def jp_cjz(self, args):
@@ -626,6 +631,7 @@ class CodeGen(Transformer):
     def make_begin_label_loop(self, args):
         begin_label = self.get_label()
         self.label_stack.append(begin_label)
+        self.tmp.write("br label %" + begin_label + "\n")
         self.tmp.write(begin_label + ":\n")
 
     def branch_middle_loop(self, args):
