@@ -692,3 +692,12 @@ class CodeGen(Transformer):
 
     def pop(self, args):
         self.ST_stack.pop()
+
+    def in_func_def_false(self, args):
+        self.in_func_def = False
+
+    def in_func_def_true(self, args):
+        self.in_func_def = True
+
+    def close_bracket(self, args):
+        self.tmp.write("}\n")

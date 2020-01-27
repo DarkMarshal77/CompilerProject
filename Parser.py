@@ -20,9 +20,11 @@ array_var: "array" type id assignment_prime
          
 assignment: ":=" expr -> assignment
 
-func_def: "function" push_st id push_q "(" args ")" ":" type call_func_def block
+func_def: "function" in_func_def_true push_st id push_q "(" args ")" ":" type call_func_def in_func_def_false block -> close_bracket
 call_func_def: -> function_def
 push_st: -> push_st
+in_func_def_true: -> in_func_def_true
+in_func_def_false: -> in_func_def_false
 
 proc_def: "procedure" id "(" args ")" block
 
@@ -171,6 +173,5 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main(integer a) : integer
 begin
-
 end
 """).pretty())
