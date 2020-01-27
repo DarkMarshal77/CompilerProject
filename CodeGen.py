@@ -26,6 +26,8 @@ class CodeGen(Transformer):
         self.dcls = ''
         self.consts = ''
 
+        self.in_func_def = False
+
         self.tmp = open("LLVM/tmp.ll", 'w')
 
     def get_label(self):
@@ -49,6 +51,9 @@ class CodeGen(Transformer):
         var = self.ss.pop()
         type = self.ss.pop()
         self.ss.append(var)
+
+        if self.in_func_def:
+            return
 
         for symbol_table in self.ST_stack:
             if var.value in symbol_table:
@@ -566,6 +571,7 @@ class CodeGen(Transformer):
         self.ss.append(Queue())
 
     def pop_ss_push_q(self, args):
+        print(self.ss)
         temp = self.ss.pop()
         self.ss[-1].put(temp)
 
@@ -656,19 +662,26 @@ class CodeGen(Transformer):
         out_type = self.ss.pop()
         args = self.ss.pop()
         func_name = self.ss.pop()
+        self.scope_level += 1
 
         func_args = ''
-        while len(args) > 1:
+        while args.qsize() > 1:
             arg = args.get()
-            func_args += '{} {}, '.format(type_convert[arg.type], arg.value)
-        if len(args) == 1:
+            arg_type, arg_name = self.operand_fetch(arg, False)
+            func_args += '{} {}, '.format(type_convert[arg_type], arg_name)
+        if args.qsize() == 1:
             arg = args.get()
-            func_args += '{} {}'.format(type_convert[arg.type], arg.value)
+            arg_type, arg_name = self.operand_fetch(arg, False)
+            func_args += '{} {}'.format(type_convert[arg_type], arg_name)
 
-        self.tmp.write('define {} @{}({}) {'.format(type_convert[out_type], func_name, func_args))
+        self.tmp.write('define {} @{}({})\n'.format(type_convert[out_type], func_name, func_args))
+        self.tmp.write('{\n')
+
+        self.scope_level -= 1
+        self.ss.append(self.ST_stack.pop())
 
     def push_st(self, args):
-        if type(self.ss[-1]) == dict:
+        if self.ss and type(self.ss[-1]) == dict:
             self.ST_stack.append(self.ss.pop())
         else:
             self.ST_stack.append(INIT_ST.copy())
