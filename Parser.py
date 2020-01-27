@@ -171,7 +171,14 @@ begin
 
 integer a;
 integer b;
-while (1) do begin
+--while (a + b) do begin
+--    a := 2;
+--end;
+
+if(a + b) then begin
+    a := 1;
+end
+else begin
     a := 2;
 end;
 

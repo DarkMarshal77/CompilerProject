@@ -600,17 +600,27 @@ class CodeGen(Transformer):
 
     def jz(self, args):
         be = self.ss.pop()
-        print(self.ST[be.value])
+        st1_label = self.get_label()
+        st2_label = self.get_label()
+        self.label_stack.append(st2_label)
+        # todo type cast and "br be"
+        self.tmp.write(st1_label + ":\n")
         pass
 
     def cjz(self, args):
-        pass
+        st2_label = self.label_stack.pop()
+        self.tmp.write(st2_label + ":\n")
 
     def cjp(self, args):
-        pass
+        out_label = self.label_stack.pop()
+        self.tmp.write(out_label + ":\n")
 
     def jp_cjz(self, args):
-        pass
+        st2_label = self.label_stack.pop()
+        out_label = self.get_label()
+        self.label_stack.append(out_label)
+        self.tmp.write("br label %" + out_label + "\n")
+        self.tmp.write(st2_label + ":\n")
 
     def make_begin_label_loop(self, args):
         begin_label = self.get_label()
