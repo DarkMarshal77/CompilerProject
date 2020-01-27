@@ -238,6 +238,7 @@ class CodeGen(Transformer):
         if opr.type == 'CNAME':
             found = False
             level = self.scope_level
+            print(self.ST_stack, level)
             while level > 0:
                 if opr.value in self.ST_stack[level]:
                     opr_descriptor = self.ST_stack[level][opr.value]
@@ -255,7 +256,7 @@ class CodeGen(Transformer):
                     break
                 level -= 1
 
-            if found is False:
+            if not found:
                 if opr.value not in self.ST_stack[0]:
                     raise Exception('ERROR: {} is not defined.'.format(opr.value))
                 else:
@@ -665,7 +666,7 @@ class CodeGen(Transformer):
         out_type = self.ss.pop()
         args = self.ss.pop()
         func_name = self.ss.pop()
-        self.scope_level += 1
+        # self.scope_level += 1
 
         func_args = ''
         while args.qsize() > 1:
@@ -684,13 +685,15 @@ class CodeGen(Transformer):
         self.ss.append(self.ST_stack.pop())
 
     def push_st(self, args):
+        self.scope_level += 1
         if self.ss and type(self.ss[-1]) == dict:
             self.ST_stack.append(self.ss.pop())
         else:
             self.ST_stack.append(INIT_ST.copy())
 
-    def pop(self, args):
+    def pop_st(self, args):
         self.ST_stack.pop()
+        self.scope_level -= 1
 
     def in_func_def_false(self, args):
         self.in_func_def = False
