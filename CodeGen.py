@@ -49,7 +49,6 @@ class CodeGen(Transformer):
         var = self.ss.pop()
         type = self.ss.pop()
         self.ss.append(var)
-        print()
 
         for symbol_table in self.ST_stack:
             if var.value in symbol_table:
@@ -612,3 +611,24 @@ class CodeGen(Transformer):
 
     def jp_cjz(self, args):
         pass
+
+    def make_begin_label_loop(self, args):
+        begin_label = self.get_label()
+        self.label_stack.append(begin_label)
+        self.tmp.write(begin_label + ":\n")
+
+    def branch_middle_loop(self, args):
+        be = self.ss.pop()
+        # todo type cast and scope be
+        in_label = self.get_label()
+        out_label = self.get_label()
+        self.label_stack.append(out_label)
+        # todo self.tmp.write("br")
+        self.tmp.write(in_label + ":\n")
+
+    def jp_begin_loop(self, args):
+        out_label = self.label_stack.pop()
+        begin_label = self.label_stack.pop()
+        self.tmp.write("br label %" + begin_label + "\n")
+        self.tmp.write(out_label + ":\n")
+

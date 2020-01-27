@@ -112,7 +112,7 @@ id: CNAME -> id
     | "boolean" -> boolean_push
     | "char" -> character_push
 
-loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin
+loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin_loop
 make_begin_label_loop: -> make_begin_label_loop
 branch_middle_loop: -> branch_middle_loop
 
@@ -166,28 +166,14 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
-integer  d := 10;
 function main() : integer
 begin
+
 integer a;
 integer b;
-integer c;
-a := b + c * 10;
-integer e := 10 + a;
-write (10);
+while (1) do begin
+    a := 2;
+end;
+
 end
 """).pretty())
-
-
-
-# codegen = CodeGen()
-# CodeGen.main_begin(codegen)
-# CodeGen.push_ss(codegen, 515)
-# CodeGen.push_ss(codegen, 12.212)
-# CodeGen.push_ss(codegen, 'f')
-# CodeGen.push_ss(codegen, 'ahff')
-# CodeGen.write(codegen)
-# CodeGen.write(codegen)
-# CodeGen.write(codegen)
-# CodeGen.write(codegen)
-# CodeGen.main_end(codegen)
