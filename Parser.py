@@ -172,8 +172,11 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
-function main() : integer
+function main(integer first, real second) : integer
 begin
-write(10);
+integer a := 12;
+boolean bool;
+read(bool);
+write(bool);
 end
 """).pretty())

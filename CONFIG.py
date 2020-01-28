@@ -11,9 +11,16 @@ types = ["SIGNED_INT", "ESCAPED_STRING", "SIGNED_FLOAT", "CHAR", "BOOL"]
 type_convert = {"SIGNED_INT": "i" + str(INT_SIZE * 8),
                 "SIGNED_FLOAT": "double",
                 "CHAR": "i8",
-                "BOOL": "i8",
-                "ESCAPED_STRING": "i8*",
+                "BOOL": "i1",
+                "ESCAPED_STRING": "[{} x i8]".format(STRING_MAX_SIZE),
                 }
+
+size_map = {"SIGNED_INT": INT_SIZE,
+            "SIGNED_FLOAT": REAL_SIZE,
+            "CHAR": CHAR_SIZE,
+            "BOOL": BOOL_SIZE,
+            "ESCAPED_STRING": STRING_MAX_SIZE * CHAR_SIZE,
+            }
 
 var_sign = ['@', '%']
 
