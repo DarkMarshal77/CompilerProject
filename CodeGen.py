@@ -52,6 +52,62 @@ class CodeGen(Transformer):
         self.tmp.close()
         main.close()
 
+    def global_def_assignment(self, args):
+        rhs = self.ss.pop()
+        lhs = self.ss.pop()
+        type = self.ss.pop()
+
+        if type not in types:
+            raise Exception("ERROR: Invalid var type, type = {}".format(type))
+
+        if lhs.value in self.ST():
+            if lhs.value in INIT_ST:
+                print("'", lhs.value, "' is a reserved name. Try another name for your variable.")
+            else:
+                print("Double declaration of '", lhs.value, "'")
+            quit()
+
+        value_name = self.type_cast(type, rhs.value, rhs.type, True)
+        var_ptr_name = str(self.temp_cnt[0])
+        self.temp_cnt[0] += 1
+        if type == "ESCAPED_STRING":
+            i = 0
+            value_len = len(value_name)
+            while i < STRING_MAX_SIZE - value_len:
+                value_name += '\\00'
+                i += 1
+
+            self.tmp.write('@{} = global [{} x i8] c"{}", align 16\n'.format(var_ptr_name, STRING_MAX_SIZE, value_name))
+            self.ST()[lhs.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": False}
+        else:
+            self.tmp.write(
+                        '@{} = global {} {}, align {}\n'.format(var_ptr_name, type_convert[type], value_name, size_map[type]))
+            self.ST()[lhs.value] = {"type": type, "size": size_map[type], "name": var_ptr_name, "by_value": False}
+
+    def global_def(self, args):
+        var = self.ss.pop()
+        type = self.ss.pop()
+
+        if type not in types:
+            raise Exception("ERROR: Invalid var type, type = {}".format(type))
+
+        if var.value in self.ST():
+            if var.value in INIT_ST:
+                print("'", var.value, "' is a reserved name. Try another name for your variable.")
+            else:
+                print("Double declaration of '", var.value, "'")
+            quit()
+
+        var_ptr_name = str(self.temp_cnt[0])
+        self.temp_cnt[0] += 1
+        if type == "ESCAPED_STRING":
+            self.tmp.write('@{} = global [{} x i8] zeroinitializer, align 16\n'.format(var_ptr_name, STRING_MAX_SIZE))
+            self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": self.in_func_def}
+        else:
+            self.tmp.write(
+                        '@{} = global {} 0, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
+            self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var_ptr_name, "by_value": self.in_func_def}
+
     def add_to_st(self, args):
         var = self.ss.pop()
         type = self.ss.pop()
@@ -67,23 +123,17 @@ class CodeGen(Transformer):
                 print("Double declaration of '", var.value, "'")
             quit()
 
-        tmp_cnt_ptr = 1 if self.scope_level > 0 else 0
-        var_ptr_name = str(self.temp_cnt[tmp_cnt_ptr])
-        self.temp_cnt[tmp_cnt_ptr] += 1
+        var_ptr_name = str(self.temp_cnt[1])
+        self.temp_cnt[1] += 1
         if type == "ESCAPED_STRING":
             if not self.in_func_def:
-                if self.scope_level == 0:
-                    self.tmp.write('@{} = global [{} x i8] zeroinitializer\n'.format(var_ptr_name, STRING_MAX_SIZE))
-                else:
-                    self.tmp.write('%{} = alloca [{} x i8]\n'.format(var_ptr_name, STRING_MAX_SIZE))
-            self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": self.in_func_def}
+                self.tmp.write('%{} = alloca [{} x i8], align 16\n'.format(var_ptr_name, STRING_MAX_SIZE))
+                self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": self.in_func_def}
+            else:
+                self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var.value + '_ptr', "by_value": self.in_func_def}
         else:
             if not self.in_func_def:
-                if self.scope_level == 0:
-                    self.tmp.write(
-                        '@{} = global {} 0, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
-                else:
-                    self.tmp.write(
+                self.tmp.write(
                         '%{} = alloca {}, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
                 self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var_ptr_name,
                                         "by_value": self.in_func_def}

@@ -5,8 +5,20 @@ from CodeGen import CodeGen
 grammar = """
 start: func_def start
      | proc_def start
-     | var_dcl ";" start
+     | global_var_dcl ";" start
      |
+
+global_var_dcl: global_simple_var
+       | global_array_var
+       
+global_simple_var: type id global_assignment_prime
+
+global_assignment_prime: global_assignment -> global_def_assignment
+                | -> global_def
+          
+global_array_var: "array" type id global_assignment_prime
+         
+global_assignment: ":=" constant -> push_ss
 
 var_dcl: simple_var
        | array_var
@@ -174,14 +186,22 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
+string glob_str := "COST_STR";
+integer glob := 1;
 function main() : integer
 begin
-boolean a := 0.2;
-if (a) then begin
-    write("yes");
-end else begin
-    write("no");
+integer b;
+integer a := 1;
+while (a <= 10) do begin
+    if (glob % 3 == 0 and glob % 2 == 0) then begin
+        write("glob is ");
+        write(glob);
+        write('\n');
+    end
+    glob := glob + 1;
+    a := a + 1;
 end
+write(glob_str);
 return 0;
 end
 """).pretty())
