@@ -386,7 +386,7 @@ class CodeGen(Transformer):
     def const_type_cast(self, res_type, opr_name, opr_type):
         if res_type == 'SIGNED_INT':
             if opr_type == 'SIGNED_FLOAT':
-                return str(round(float(opr_name)))
+                return str(int(float(opr_name)))
             elif opr_type == 'BOOL':
                 return '1' if opr_name == 'true' else '0'
             elif opr_type == 'ESCAPED_STRING':
@@ -410,7 +410,7 @@ class CodeGen(Transformer):
             elif opr_type == 'CHAR':
                 return 'false' if int(opr_name) == 0 else 'true'
             elif opr_type == 'SIGNED_FLOAT':
-                return 'false' if int(float(opr_name)) == 0 else 'true'
+                return 'false' if float(opr_name) == 0.0 else 'true'
             elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
 
@@ -486,16 +486,11 @@ class CodeGen(Transformer):
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
         if res_type == 'SIGNED_INT':
-            if op_type == 'rem':
-                self.tmp.write(
-                    '{}{} = srem i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
-                                                      first_name, second_name))
-            else:
-                if op_type == 'div':
-                    op_type = 's' + op_type
-                self.tmp.write(
-                    '{}{} = {} nsw i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
-                                                        first_name, second_name))
+            if op_type == 'div' or op_type == 'rem':
+                op_type = 's' + op_type
+            self.tmp.write(
+                '{}{} = {} i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
+                                                first_name, second_name))
             self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
                                                                      "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                      "by_value": True}
@@ -587,12 +582,12 @@ class CodeGen(Transformer):
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
         self.tmp.write(
-            '{}{} = {} i8 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type, first_name,
+            '{}{} = {} i1 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type, first_name,
                                            second_name))
-        tmp_name = '{}{}'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr])
-        self.temp_cnt[temp_cnt_ptr] += 1
-        self.tmp.write(
-            '{}{} = trunc i8 {} to i1\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
+        # tmp_name = '{}{}'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr])
+        # self.temp_cnt[temp_cnt_ptr] += 1
+        # self.tmp.write(
+        #     '{}{} = trunc i8 {} to i1\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
         self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
                                                                  "size": BOOL_SIZE,
                                                                  "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),

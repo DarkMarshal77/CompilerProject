@@ -176,15 +176,12 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-
-integer a := 11;
-while (a <= 10) do begin
-    integer a := 1;
-    a := a + 1;
-    write(a);
-    write('\n');
+boolean a := 0.2;
+if (a) then begin
+    write("yes");
+end else begin
+    write("no");
 end
-
-return 2+3;
+return 0;
 end
 """).pretty())
