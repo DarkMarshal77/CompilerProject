@@ -177,13 +177,14 @@ print(parser.parse("""
 function main() : integer
 begin
 
-integer a := 1;
+integer a := 11;
 while (a <= 10) do begin
     integer a := 1;
     a := a + 1;
     write(a);
+    write('\n');
 end
 
-return 0;
+return 2+3;
 end
 """).pretty())

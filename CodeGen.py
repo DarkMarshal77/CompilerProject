@@ -27,6 +27,7 @@ class CodeGen(Transformer):
         self.consts = ''
 
         self.in_func_def = False
+        self.display = ''
 
         self.tmp = open("LLVM/tmp.ll", 'w')
 
@@ -802,6 +803,7 @@ class CodeGen(Transformer):
         for arg in args.queue:
             st_args.put(arg)
         self.ST_stack[0][func_name.value] = {"out_type": out_type, "args": st_args}
+        self.display = func_name.value
 
         func_args = ''
         while args.qsize() > 1:
@@ -841,8 +843,13 @@ class CodeGen(Transformer):
 
     def close_bracket(self, args):
         self.tmp.write("}\n\n")
+        self.display = ''
 
     def ret(self, args):
         a = self.ss.pop()
-        print(a.type, a.value)
-        self.tmp.write("ret i32 0\n")
+        a_type, a_name = self.operand_fetch(a, True)
+        func_type = self.ST_stack[0][self.display]['out_type']
+
+        if func_type != a_type:
+            raise Exception('ERROR: function type is {} but return type is {}'.format(func_type, a_type))
+        self.tmp.write("ret {} {}\n".format(type_convert[a_type], a_name))
