@@ -55,7 +55,7 @@ unary_op = ["-", "~"]
 COMP_SIGN_TO_FLAG = {"SIGNED_INT": {
         "==": "eq",
         "<>": "ne",
-        ">=": "sgt",
+        ">=": "sge",
         "<=": "sle",
         ">": "sgt",
         "<": "slt",

@@ -122,8 +122,8 @@ class CodeGen(Transformer):
         self.ss.append(args[0])
 
     def empty_ss(self, args):
-        # self.ss = []
-        pass
+        if len(self.ss) >= 10000:
+            self.ss = self.ss[5000:]
 
     def write(self):
         var = self.ss.pop()

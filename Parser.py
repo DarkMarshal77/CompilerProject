@@ -174,7 +174,7 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-write('c');
+write(2 >= 2);
 return 0;
 end
 """).pretty())
