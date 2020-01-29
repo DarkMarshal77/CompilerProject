@@ -44,10 +44,11 @@ INIT_ST = {"array": {},
            "string": {},
            "while": {},
            "var": {},
-           "write": {},
-           "read": {},
+           "write": {"out_type": 'SIGNED_INT'},
+           "read": {"out_type": 'SIGNED_INT'},
+           "strlen": {"out_type": 'SIGNED_INT'},
            "false": {"type": "BOOL", "size": BOOL_SIZE},
-           "true": {"type": "BOOL", "size": BOOL_SIZE}
+           "true": {"type": "BOOL", "size": BOOL_SIZE},
            }
 
 unary_op = ["-", "~"]
