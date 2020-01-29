@@ -38,7 +38,9 @@ block: "begin" push_st stl "end" pop_st
 pop_st: -> pop_st
 
 stl: st ";" empty_ss stl
-   | 
+   | loop empty_ss stl
+   | conditional empty_ss stl
+   |
 empty_ss: -> empty_ss
 
 st: expr
@@ -174,7 +176,15 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-write(2 >= 2);
+
+integer a := 1;
+while (a <= 10) do begin
+    write("a is: ");
+    write(a);
+    a := a + 1;
+    write('\n');
+end
+
 return 0;
 end
 """).pretty())
