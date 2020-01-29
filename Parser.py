@@ -110,7 +110,7 @@ id: CNAME -> id
         | "0x" SIGNED_INT
         | SIGNED_FLOAT
         | ESCAPED_STRING
-        | "\'" CHAR "\'"
+        | CHAR 
 
 ?type: "integer" -> integer_push
     | "real" -> real_push
@@ -130,7 +130,7 @@ jp_cjz: -> jp_cjz
 ep: "else" jp_cjz block -> cjp
   | -> cjz
  
-CHAR: /./
+CHAR: /'[^']*'/
 
 %import common.SIGNED_NUMBER
 %import common.SIGNED_INT
@@ -174,13 +174,7 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 print(parser.parse("""
 function main() : integer
 begin
-integer a := 5;
-integer b := 2;
-while(a) do begin
-write(a);
 write('c');
-a := a - 1;
-end;
-return a + b;
+return 0;
 end
 """).pretty())

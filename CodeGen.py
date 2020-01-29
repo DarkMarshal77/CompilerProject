@@ -114,7 +114,9 @@ class CodeGen(Transformer):
 
     def push_ss(self, args):
         if args[0].type == 'CHAR':
-            args[0].value = ord(args[0].value)
+            if len(args[0].value) != 3:
+                raise Exception("Expected a character. But something else is given!")
+            args[0].value = ord(args[0].value[1])
         if args[0].type == 'ESCAPED_STRING':
             args[0].value = args[0].value[1:-1]
         self.ss.append(args[0])
