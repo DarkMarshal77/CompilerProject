@@ -6,6 +6,8 @@ define i32 @main()
 {
 %a_ptr = alloca i32, align 4
 store i32 5, i32* %a_ptr
+%b_ptr = alloca i32, align 4
+store i32 2, i32* %b_ptr
 br label %L0
 L0:
 %1 = load i32, i32* %a_ptr
@@ -22,6 +24,9 @@ L1:
 store i32 %7, i32* %a_ptr
 br label %L0
 L2:
+%8 = load i32, i32* %a_ptr
+%9 = load i32, i32* %b_ptr
+%10 = add nsw i32 %8, %9
 ret i32 0
 }
 

@@ -740,4 +740,5 @@ class CodeGen(Transformer):
 
     def ret(self, args):
         a = self.ss.pop()
+        print(a.type, a.value)
         self.tmp.write("ret i32 0\n")

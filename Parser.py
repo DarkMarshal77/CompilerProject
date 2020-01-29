@@ -46,7 +46,7 @@ st: expr
   | id assignment
   | var_dcl
   | loop 
-  | "return" op -> ret
+  | "return" expr -> ret
   | conditional
 
 id_plus: "," id id_plus 
@@ -175,11 +175,12 @@ print(parser.parse("""
 function main() : integer
 begin
 integer a := 5;
+integer b := 2;
 while(a) do begin
 write(a);
 write('c');
 a := a - 1;
 end;
-return 0;
+return a + b;
 end
 """).pretty())
