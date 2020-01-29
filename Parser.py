@@ -46,7 +46,7 @@ st: expr
   | id assignment
   | var_dcl
   | loop 
-  | "return" id
+  | "return" op -> ret
   | conditional
 
 id_plus: "," id id_plus 
@@ -172,14 +172,14 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # """).pretty())
 
 print(parser.parse("""
-function main(integer first, real second) : integer
+function main() : integer
 begin
-integer a := 1;
-integer b := 2;
-if (a == 1) then
-begin
-b := 1;
+integer a := 5;
+while(a) do begin
+write(a);
+write('c');
+a := a - 1;
 end;
-write(b);
+return 0;
 end
 """).pretty())

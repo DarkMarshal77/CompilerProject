@@ -1,4 +1,5 @@
 import atexit
+import copy
 from queue import Queue
 from lark import Transformer
 from CONFIG import *
@@ -43,6 +44,7 @@ class CodeGen(Transformer):
         self.tmp = open("LLVM/tmp.ll", 'r')
 
         main.write(self.consts)
+        main.write("\n\n")
         main.write(self.tmp.read())
         main.write(self.dcls)
 
@@ -118,7 +120,8 @@ class CodeGen(Transformer):
         self.ss.append(args[0])
 
     def empty_ss(self, args):
-        self.ss = []
+        # self.ss = []
+        pass
 
     def write(self):
         var = self.ss.pop()
@@ -691,6 +694,10 @@ class CodeGen(Transformer):
         args = self.ss.pop()
         func_name = self.ss.pop()
         # self.scope_level += 1
+        st_args = Queue()
+        for arg in args.queue:
+            st_args.put(arg)
+        self.ST_stack[0][func_name.value] = {"out_type": out_type, "args": st_args}
 
         func_args = ''
         while args.qsize() > 1:
@@ -729,4 +736,8 @@ class CodeGen(Transformer):
         self.in_func_def = True
 
     def close_bracket(self, args):
-        self.tmp.write("}\n")
+        self.tmp.write("}\n\n")
+
+    def ret(self, args):
+        a = self.ss.pop()
+        self.tmp.write("ret i32 0\n")
