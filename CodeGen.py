@@ -552,10 +552,6 @@ class CodeGen(Transformer):
                                                          COMP_SIGN_TO_FLAG[res_type]['op'],
                                                          COMP_SIGN_TO_FLAG[res_type][op_type], type_convert[res_type],
                                                          first_name, second_name))
-        tmp_name = '{}{}'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr])
-        self.temp_cnt[temp_cnt_ptr] += 1
-        self.tmp.write(
-            '{}{} = zext i1 {} to i8\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], tmp_name))
         self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "BOOL",
                                                                  "size": BOOL_SIZE,
                                                                  "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
