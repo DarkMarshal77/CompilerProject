@@ -59,31 +59,36 @@ class CodeGen(Transformer):
         if type not in types:
             raise Exception("ERROR: Invalid var type, type = {}".format(type))
 
-        for symbol_table in self.ST_stack:
-            if var.value in symbol_table:
-                if var.value in INIT_ST:
-                    print("'", var.value, "' is a reserved name. Try another name for your variable.")
-                else:
-                    print("Double declaration of '", var.value, "'")
-                quit()
+        if var.value in self.ST():
+            if var.value in INIT_ST:
+                print("'", var.value, "' is a reserved name. Try another name for your variable.")
+            else:
+                print("Double declaration of '", var.value, "'")
+            quit()
 
+        tmp_cnt_ptr = 1 if self.scope_level > 0 else 0
+        var_ptr_name = str(self.temp_cnt[tmp_cnt_ptr])
+        self.temp_cnt[tmp_cnt_ptr] += 1
         if type == "ESCAPED_STRING":
             if not self.in_func_def:
                 if self.scope_level == 0:
-                    self.tmp.write('@{}_ptr = global [{} x i8] zeroinitializer\n'.format(var.value, STRING_MAX_SIZE))
+                    self.tmp.write('@{} = global [{} x i8] zeroinitializer\n'.format(var_ptr_name, STRING_MAX_SIZE))
                 else:
-                    self.tmp.write('%{}_ptr = alloca [{} x i8]\n'.format(var.value, STRING_MAX_SIZE))
-            self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var.value + '_ptr', "by_value": self.in_func_def}
+                    self.tmp.write('%{} = alloca [{} x i8]\n'.format(var_ptr_name, STRING_MAX_SIZE))
+            self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": self.in_func_def}
         else:
             if not self.in_func_def:
                 if self.scope_level == 0:
                     self.tmp.write(
-                        '@{}_ptr = global {} 0, align {}\n'.format(var.value, type_convert[type], size_map[type]))
+                        '@{} = global {} 0, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
                 else:
                     self.tmp.write(
-                        '%{}_ptr = alloca {}, align {}\n'.format(var.value, type_convert[type], size_map[type]))
-            self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var.value + '_ptr',
-                                    "by_value": self.in_func_def}
+                        '%{} = alloca {}, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
+                self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var_ptr_name,
+                                        "by_value": self.in_func_def}
+            else:
+                self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var.value + '_ptr',
+                                        "by_value": self.in_func_def}
 
     def integer_push(self, args):
         self.ss.append("SIGNED_INT")
@@ -480,12 +485,16 @@ class CodeGen(Transformer):
         second_name = self.type_cast(res_type, second_name, second_type, False if opr2.type == 'CNAME' else True)
 
         if res_type == 'SIGNED_INT':
-            if op_type == 'mod' or op_type == 'div':
-                op_type = 's' + op_type
-
-            self.tmp.write(
-                '{}{} = {} nsw i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
-                                                    first_name, second_name))
+            if op_type == 'rem':
+                self.tmp.write(
+                    '{}{} = srem i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr],
+                                                      first_name, second_name))
+            else:
+                if op_type == 'div':
+                    op_type = 's' + op_type
+                self.tmp.write(
+                    '{}{} = {} nsw i32 {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
+                                                        first_name, second_name))
             self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
                                                                      "name": '{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                      "by_value": True}
@@ -664,7 +673,7 @@ class CodeGen(Transformer):
         self.ss[-1].put(temp)
 
     def assignment(self, args):
-        # todo: sting assign and global assign
+        # todo: global assign
         rhs = self.ss.pop()
         lhs = self.ss.pop()
 

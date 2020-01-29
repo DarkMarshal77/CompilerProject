@@ -179,10 +179,9 @@ begin
 
 integer a := 1;
 while (a <= 10) do begin
-    write("a is: ");
-    write(a);
+    integer a := 1;
     a := a + 1;
-    write('\n');
+    write(a);
 end
 
 return 0;
