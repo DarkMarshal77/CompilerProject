@@ -178,7 +178,8 @@ class CodeGen(Transformer):
         self.ss.append(args[0])
 
     def pop_ss(self, args):
-        self.ss.pop()
+        if not self.in_func_def:
+            self.ss.pop()
 
     def empty_ss(self, args):
         if len(self.ss) >= 10000:

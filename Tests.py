@@ -50,6 +50,7 @@ function main(): integer begin
     boolean h := false;
     
     write(a + b * c);
+    write('\n');
     write((a + b) * c);
 end
 """

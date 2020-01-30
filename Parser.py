@@ -167,18 +167,18 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
 
-print(parser.parse("""
-function fun() : string
-begin
-string s := "dfhdbfhj";
-string tmp := s;
-return tmp;
-end
-
-function main() : integer
-begin
-write(fun());
-return 0;
-end
-""").pretty())
-# print(parser.parse(test7).pretty())
+# print(parser.parse("""
+# function fun() : string
+# begin
+# string s := "dfhdbfhj";
+# string tmp := s;
+# return tmp;
+# end
+#
+# function main() : integer
+# begin
+# write(fun());
+# return 0;
+# end
+# """).pretty())
+print(parser.parse(test3).pretty())
