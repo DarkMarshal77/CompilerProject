@@ -20,9 +20,11 @@ ret i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str_func_def_ret, i32 0, i
 
 define i32 @main()
 {
-%tmp_1 = call i8*() @fun ()
+%tmp_1 = alloca i32, align 4
+%tmp_2 = alloca i32, align 4
+%tmp_3 = call i8*() @fun ()
 %str1 = getelementptr inbounds [3 x i8], [3 x i8]* @.const1, i32 0, i32 0
-%tmp_2 = call i32 (i8*, ...) @printf(i8* %str1, i8* %tmp_1)
+%tmp_4 = call i32 (i8*, ...) @printf(i8* %str1, i8* %tmp_3)
 ret i32 0
 br label %L1
 L1:
