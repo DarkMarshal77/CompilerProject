@@ -529,6 +529,10 @@ class CodeGen(Transformer):
                 self.tmp.write(
                     '%tmp_{} = trunc {} {} to i8\n'.format(self.temp_cnt[temp_cnt_ptr],
                                                         type_convert[opr_type], opr_name))
+        elif res_type == 'ESCAPED_STRING':
+            rhs_name = self.type_cast('CHAR', opr_name, opr_type, const)
+            self.tmp.write('%tmp_{0} = alloca i8, align 1\n'.format(self.temp_cnt[temp_cnt_ptr]))
+            self.tmp.write('store i8 {}, i8* %tmp_{}\n'.format(rhs_name, self.temp_cnt[temp_cnt_ptr]))
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
