@@ -111,5 +111,25 @@ end
 
 function main(): integer begin
     write(f());g();
+    return 1;
+end
+"""
+
+test7 = """
+function main(): integer begin
+    integer a := 1;
+    real  b := 3;
+    char c := 'c';
+    
+    if (a == 1) then begin
+        if (b == 3) then begin
+            while (c <> 106) do begin
+                c := c + 1;
+            end
+            write(c);
+        end
+    end else begin
+        write(-1);
+    end
 end
 """
