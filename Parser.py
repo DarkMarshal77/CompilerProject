@@ -177,10 +177,7 @@ end
 
 function main() : integer
 begin
-string s := "dddddd";
-string tmp := s;
-read(tmp);
-write(tmp);
+write(fun());
 return 0;
 end
 """).pretty())

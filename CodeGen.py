@@ -450,7 +450,6 @@ class CodeGen(Transformer):
                 raise Exception('ERROR: Unable to cast string')
             else:
                 return str(opr_name)
-
         elif res_type == 'SIGNED_FLOAT':
             if opr_type == 'BOOL':
                 return '1.0' if opr_name == 'true' else '0.0'
@@ -460,7 +459,6 @@ class CodeGen(Transformer):
                 return str(opr_name) + '.0'
             else:
                 return str(opr_name) + '.0'
-
         elif res_type == 'BOOL':
             if opr_type == 'SIGNED_INT':
                 return 'false' if int(opr_name) == 0 else 'true'
@@ -470,7 +468,6 @@ class CodeGen(Transformer):
                 return 'false' if float(opr_name) == 0.0 else 'true'
             elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
-
         elif res_type == 'CHAR':
             if opr_type == 'SIGNED_INT':
                 return str(opr_name)
@@ -480,6 +477,17 @@ class CodeGen(Transformer):
                 return str(int(float(opr_name)))
             elif opr_type == 'ESCAPED_STRING':
                 raise Exception('ERROR: Unable to cast string')
+        elif res_type == 'ESCAPED_STRING':
+            rhs_name = self.type_cast('CHAR', opr_name, opr_type, True)
+            self.tmp.write('%tmp_{0} = alloca [2 x i8], align 1\n'.format(self.temp_cnt[1]))
+            self.temp_cnt[1] += 1
+            self.tmp.write('%tmp_{} = getelementptr inbounds [2 x i8], [2 x i8]* %tmp_{}, i64 0, i64 0\n'.format(self.temp_cnt[1], self.temp_cnt[1]-1))
+            self.tmp.write('store i8 {}, i8* %tmp_{}\n'.format(rhs_name, self.temp_cnt[1]))
+            self.temp_cnt[1] += 1
+            self.tmp.write('%tmp_{} = getelementptr inbounds [2 x i8], [2 x i8]* %tmp_{}, i64 0, i64 1\n'.format(self.temp_cnt[1], self.temp_cnt[1]-2))
+            self.tmp.write('store i8 0, i8* %tmp_{}\n'.format(self.temp_cnt[1]))
+            self.temp_cnt[1] += 1
+            return "%tmp_" + str(self.temp_cnt[1] - 2)
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
@@ -530,9 +538,16 @@ class CodeGen(Transformer):
                     '%tmp_{} = trunc {} {} to i8\n'.format(self.temp_cnt[temp_cnt_ptr],
                                                         type_convert[opr_type], opr_name))
         elif res_type == 'ESCAPED_STRING':
-            rhs_name = self.type_cast('CHAR', opr_name, opr_type, const)
-            self.tmp.write('%tmp_{0} = alloca i8, align 1\n'.format(self.temp_cnt[temp_cnt_ptr]))
-            self.tmp.write('store i8 {}, i8* %tmp_{}\n'.format(rhs_name, self.temp_cnt[temp_cnt_ptr]))
+            rhs_name = self.type_cast('CHAR', opr_name, opr_type, True)
+            self.tmp.write('%tmp_{0} = alloca [2 x i8], align 1\n'.format(self.temp_cnt[1]))
+            self.temp_cnt[1] += 1
+            self.tmp.write('%tmp_{} = getelementptr inbounds [2 x i8], [2 x i8]* %tmp_{}, i64 0, i64 0\n'.format(self.temp_cnt[1], self.temp_cnt[1]-1))
+            self.tmp.write('store i8 {}, i8* %tmp_{}\n'.format(rhs_name, self.temp_cnt[1]))
+            self.temp_cnt[1] += 1
+            self.tmp.write('%tmp_{} = getelementptr inbounds [2 x i8], [2 x i8]* %tmp_{}, i64 0, i64 1\n'.format(self.temp_cnt[1], self.temp_cnt[1]-2))
+            self.tmp.write('store i8 0, i8* %tmp_{}\n'.format(self.temp_cnt[1]))
+            self.temp_cnt[1] += 1
+            return "%tmp_" + str(self.temp_cnt[1] - 2)
         else:
             raise Exception('FATAL ERROR: {} type is not defined'.format(res_type))
 
