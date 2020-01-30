@@ -1,5 +1,5 @@
 from lark import Lark
-
+from Tests import *
 from CodeGen import CodeGen
 
 grammar = """
@@ -28,7 +28,10 @@ add_to_st: -> add_to_st
 assignment_prime: assignment
                 |
           
-array_var: "array" type id assignment_prime
+array_var: id ":" "array" push_q "[" dims "]" "of" type -> make_array_dscp
+dims: expr pop_ss_push_q dims_prime
+dims_prime: "," expr pop_ss_push_q dims_prime
+          | 
          
 assignment: ":=" expr -> assignment
 
@@ -38,7 +41,8 @@ push_st: -> push_st
 in_func_def_true: -> in_func_def_true
 in_func_def_false: -> in_func_def_false
 
-proc_def: "procedure" id "(" args ")" block
+proc_def: "procedure" in_func_def_true push_st id push_q "(" args ")" call_proc_def in_func_def_false block -> close_bracket_proc
+call_proc_def: -> proc_def
 
 args: var_dcl pop_ss_push_q args_prime
     | 
@@ -163,25 +167,4 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
 
-print(parser.parse("""
-
-function fib(integer n): integer begin
-    if (n == 1 or n == 2) then begin 
-        return 1;
-    end
-    else begin 
-        return fib(n - 2) + fib(n - 1);
-    end
-end
-
-function main() : integer
-begin
-integer a := 1;
-while (a <= 20) do begin
-    write(fib(a));
-    a := a + 1;
-    write('\n');
-end
-return 0;
-end
-""").pretty())
+print(parser.parse(test6).pretty())

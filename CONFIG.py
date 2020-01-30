@@ -13,6 +13,7 @@ type_convert = {"SIGNED_INT": "i" + str(INT_SIZE * 8),
                 "CHAR": "i8",
                 "BOOL": "i1",
                 "ESCAPED_STRING": "[{} x i8]".format(STRING_MAX_SIZE),
+                "VOID": "void",
                 }
 
 size_map = {"SIGNED_INT": INT_SIZE,
@@ -20,6 +21,7 @@ size_map = {"SIGNED_INT": INT_SIZE,
             "CHAR": CHAR_SIZE,
             "BOOL": BOOL_SIZE,
             "ESCAPED_STRING": STRING_MAX_SIZE * CHAR_SIZE,
+            "VOID": 0
             }
 
 var_sign = ['@', '%']
@@ -55,7 +57,8 @@ temp_value = {"SIGNED_INT": "0",
               "SIGNED_FLOAT": "0.0",
               "CHAR": "0",
               "BOOL": "false",
-              "ESCAPED_STRING": "a"
+              "ESCAPED_STRING": "a",
+              "VOID": "",
               }
 
 unary_op = ["-", "~"]

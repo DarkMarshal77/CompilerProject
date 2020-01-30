@@ -852,7 +852,12 @@ class CodeGen(Transformer):
                 a_type, a_name = self.operand_fetch(arg, True)
                 output_string = output_string + type_convert[a_type] + " " + a_name + ", "
             output_string = output_string[:-2] + ")"
+            if not list(args.queue):
+                output_string = "()"
             # todo type cast of inputs
+            if output_type == "VOID":
+                self.tmp.write("call {} @{} {}\n".format(signature, func_name.value, output_string))
+                return
             temp = self.temp_cnt[1]
             self.tmp.write("%tmp_{} = call {} @{} {}\n".format(str(temp), signature, func_name.value, output_string))
 
@@ -866,6 +871,8 @@ class CodeGen(Transformer):
             raise Exception("Error. Function has not been declared in this scope.")
 
     def make_func_signature(self, output_type, object_args):
+        if not list(object_args.queue):
+            return type_convert[output_type] + "()"
         signature = type_convert[output_type] + " ("
         for arg in object_args.queue:
             signature = signature + type_convert[arg] + ", "
@@ -925,6 +932,9 @@ class CodeGen(Transformer):
 
     def close_bracket(self, args):
         func_type = self.ST_stack[0][self.display]['out_type']
+        label_temp = self.get_label()
+        self.tmp.write("br label %" + label_temp + "\n")
+        self.tmp.write(label_temp + ":\n")
         self.tmp.write("ret " + type_convert[func_type] + " " + temp_value[func_type] + "\n")
         self.tmp.write("}\n\n")
         self.display = ''
@@ -954,3 +964,22 @@ class CodeGen(Transformer):
                 self.const_cnt += 1
         else:
             self.tmp.write("ret {} {}\n".format(type_convert[a_type], a_name))
+
+    def make_array_dscp(self, args):
+        arr_type = self.ss.pop()
+        arr_dims = list(self.ss.pop().queue)
+        arr_name = self.ss.pop()
+        self.ST()[arr_name.value] = {"dims": arr_dims,
+                                     "type": arr_type,
+                                     "name": arr_name.value}
+        # todo alloc
+
+    def proc_def(self, args):
+        self.ss.append("VOID")
+        self.function_def(args)
+
+    def close_bracket_proc(self, args):
+        func_type = self.ST_stack[0][self.display]['out_type']
+        self.tmp.write("ret " + type_convert[func_type] + " " + temp_value[func_type] + "\n")
+        self.tmp.write("}\n\n")
+        self.display = ''
