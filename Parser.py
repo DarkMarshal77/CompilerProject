@@ -26,7 +26,7 @@ var_dcl: simple_var
 simple_var: type id add_to_st assignment_prime
 add_to_st: -> add_to_st
 assignment_prime: assignment
-                |
+                | -> pop_ss
           
 array_var: id ":" "array" push_q "[" dims "]" "of" type -> make_array_dscp
 dims: expr pop_ss_push_q dims_prime
@@ -167,4 +167,21 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
 
-print(parser.parse(test7).pretty())
+print(parser.parse("""
+function fun() : string
+begin
+string s := "dfhdbfhj";
+string tmp := s;
+return tmp;
+end
+
+function main() : integer
+begin
+string s := "dddddd";
+string tmp := s;
+read(tmp);
+write(tmp);
+return 0;
+end
+""").pretty())
+# print(parser.parse(test7).pretty())

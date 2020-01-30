@@ -1,46 +1,36 @@
+define i8* @fun()
+{
+%tmp_1 = alloca i8*, align 8
+%tmp_2 = getelementptr inbounds [9 x i8], [9 x i8]* @.const0, i32 0, i32 0
+store i8* %tmp_2, i8** %tmp_1
+%tmp_3 = alloca i8*, align 8
+%tmp_4 = load i8*, i8** %tmp_1
+store i8* %tmp_4, i8** %tmp_3
+%tmp_5 = load i8*, i8** %tmp_3
+ret i8* %tmp_5
+br label %L0
+L0:
+ret i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str_func_def_ret, i32 0, i32 0)
+}
+
 define i32 @main()
 {
-%tmp_1 = alloca i32, align 4
-store i32 1, i32* %tmp_1
-%tmp_2 = alloca double, align 4
-store double 3.0, double* %tmp_2
-%tmp_3 = alloca i8, align 1
-store i8 99, i8* %tmp_3
-%tmp_4 = load i32, i32* %tmp_1
-%tmp_5 = icmp eq i32 %tmp_4, 1
-br i1 %tmp_5, label %L0, label %L1
-L0:
-%tmp_6 = load double, double* %tmp_2
-%tmp_7 = fcmp oeq double %tmp_6, 3.0
-br i1 %tmp_7, label %L2, label %L3
-L2:
-br label %L4
-L4:
-%tmp_9 = load i8, i8* %tmp_3
-%tmp_10 = zext i8 %tmp_9 to i32
-%tmp_11 = icmp ne i32 %tmp_10, 106
-br i1 %tmp_11, label %L5, label %L6
-L5:
-%tmp_12 = load i8, i8* %tmp_3
-%tmp_13 = zext i8 %tmp_12 to i32
-%tmp_14 = add i32 %tmp_13, 1
-%tmp_15 = trunc i32 %tmp_14 to i8
-store i8 %tmp_15, i8* %tmp_3
-br label %L4
-L6:
-%tmp_17 = load i8, i8* %tmp_3
-%str0 = getelementptr inbounds [3 x i8], [3 x i8]* @.const0, i32 0, i32 0
-%tmp_18 = call i32 (i8*, ...) @printf(i8* %str0, i8 %tmp_17)
-br label %L3
-L3:
-br label %L7
+%tmp_1 = alloca i8*, align 8
+%tmp_2 = getelementptr inbounds [7 x i8], [7 x i8]* @.const1, i32 0, i32 0
+store i8* %tmp_2, i8** %tmp_1
+%tmp_3 = alloca i8*, align 8
+%tmp_4 = load i8*, i8** %tmp_1
+store i8* %tmp_4, i8** %tmp_3
+%str2 = getelementptr inbounds [3 x i8], [3 x i8]* @.const2, i32 0, i32 0
+%tmp_5 = alloca [512 x i8], align 16%tmp_6 = getelementptr inbounds [512 x i8], [512 x i8]* %tmp_5, i32 0, i32 0
+%tmp_7 = call i32 (i8*, ...) @scanf(i8* %str2, i8* %tmp_6)
+store i8* %tmp_6, i8** %tmp_3
+%tmp_9 = load i8*, i8** %tmp_3
+%str3 = getelementptr inbounds [3 x i8], [3 x i8]* @.const3, i32 0, i32 0
+%tmp_10 = call i32 (i8*, ...) @printf(i8* %str3, i8* %tmp_9)
+ret i32 0
+br label %L1
 L1:
-%str1 = getelementptr inbounds [3 x i8], [3 x i8]* @.const1, i32 0, i32 0
-%tmp_21 = call i32 (i8*, ...) @printf(i8* %str1, i32 -1)
-br label %L7
-L7:
-br label %L8
-L8:
 ret i32 0
 }
 

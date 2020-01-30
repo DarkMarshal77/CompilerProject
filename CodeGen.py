@@ -24,7 +24,7 @@ class CodeGen(Transformer):
         self.const_cnt = 0
         self.temp_cnt = [0, 1]
         self.dcls = ''
-        self.consts = ''
+        self.consts = '@.str_func_def_ret = private constant [1 x i8] c"\\00"\n'
 
         self.in_func_def = False
         self.display = ''
@@ -127,10 +127,10 @@ class CodeGen(Transformer):
         self.temp_cnt[1] += 1
         if type == "ESCAPED_STRING":
             if not self.in_func_def:
-                self.tmp.write('%{} = alloca [{} x i8], align 16\n'.format(var_ptr_name, STRING_MAX_SIZE))
-                self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": self.in_func_def}
+                self.tmp.write('%{} = alloca i8*, align 8\n'.format(var_ptr_name))
+                self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": False}
             else:
-                self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var.value + '_ptr', "by_value": self.in_func_def}
+                self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var.value + '_ptr', "by_value": False}
         else:
             if not self.in_func_def:
                 self.tmp.write(
@@ -259,32 +259,15 @@ class CodeGen(Transformer):
             self.const_cnt += 1
         elif opr_type == "ESCAPED_STRING":
             self.consts += '@.const{} = private constant [3 x i8] c"%s\\00"\n'.format(self.const_cnt)
-            self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
-                self.const_cnt))
+            self.tmp.write(
+                '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                    self.const_cnt))
+            self.tmp.write(
+                '%tmp_{} = call i32 (i8*, ...) @printf(i8* %str{}, {} {})\n'.format(self.temp_cnt[1], self.const_cnt,
+                                                                                    type_convert[opr_type], opr_name))
+            printf_return_var = str(self.temp_cnt[1])
+            self.temp_cnt[1] += 1
             self.const_cnt += 1
-            if var.type == 'CNAME':
-                self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
-                    self.temp_cnt[1], STRING_MAX_SIZE, opr_name))
-                self.temp_cnt[1] += 1
-                self.tmp.write('%tmp_{} = call i32 (i8*, ...) @printf(i8* %str{}, i8* %tmp_{})\n'.format(self.temp_cnt[1],
-                                                                                                 self.const_cnt - 1,
-                                                                                                 self.temp_cnt[1] - 1))
-                printf_return_var = str(self.temp_cnt[1])
-                self.temp_cnt[1] += 1
-            else:
-                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
-                                                                                           len(opr_name) + 1,
-                                                                                           opr_name)
-                self.tmp.write(
-                    '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                        len(opr_name) + 1, self.const_cnt))
-                self.tmp.write(
-                    '%tmp_{} = call i32 (i8*, ...) @printf(i8* %str{}, i8* %var_str_ptr{})\n'.format(self.temp_cnt[1],
-                                                                                                 self.const_cnt - 1,
-                                                                                                 self.const_cnt))
-                printf_return_var = str(self.temp_cnt[1])
-                self.temp_cnt[1] += 1
-                self.const_cnt += 1
         elif opr_type == "BOOL":
             opr_name = self.type_cast('SIGNED_INT', opr_name, opr_type, False if var.type == 'CNAME' else True)
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)
@@ -346,18 +329,28 @@ class CodeGen(Transformer):
             self.temp_cnt[1] += 1
             self.const_cnt += 1
         elif opr_type == 'ESCAPED_STRING':
+            print(opr_name)
             self.consts += '@.const{} = private constant [3 x i8] c"%s\\00"\n'.format(self.const_cnt)
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
-            self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
-                self.temp_cnt[1], STRING_MAX_SIZE, opr_name))
+            # define a temporary [512 x i8]
+            self.tmp.write('%tmp_{} = alloca [{} x i8], align 16'.format(self.temp_cnt[1], STRING_MAX_SIZE))
             self.temp_cnt[1] += 1
+            self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* %tmp_{2}, i32 0, i32 0\n'.format(
+                self.temp_cnt[1], STRING_MAX_SIZE, self.temp_cnt[1]-1))
+            self.temp_cnt[1] += 1
+            # scanf
             self.tmp.write(
                 '%tmp_{} = call i32 (i8*, ...) @scanf(i8* %str{}, i8* %tmp_{})\n'.format(self.temp_cnt[1], self.const_cnt,
-                                                                                 self.temp_cnt[1] - 1))
+                                                                                         self.temp_cnt[1] - 1))
             scanf_return_var = str(self.temp_cnt[1])
             self.temp_cnt[1] += 1
             self.const_cnt += 1
+
+            # save [512 x i8] to destination
+            self.tmp.write('store i8* %tmp_{}, i8** {}\n'.format(
+                self.temp_cnt[1]-2, opr_name))
+            self.temp_cnt[1] += 1
         elif opr_type == 'BOOL':
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)
             self.tmp.write(
@@ -398,7 +391,7 @@ class CodeGen(Transformer):
                         opr_name = '%' + opr_descriptor['name']
                     else:
                         opr_name = '%' + opr_descriptor['name']
-                        if get_value is True and opr_type != 'ESCAPED_STRING':
+                        if get_value is True:
                             self.tmp.write('%tmp_{0} = load {1}, {1}* {2}\n'.format(self.temp_cnt[temp_cnt_ptr],
                                                                                 type_convert[opr_type], opr_name))
                             opr_name = '%tmp_' + str(self.temp_cnt[temp_cnt_ptr])
@@ -417,22 +410,26 @@ class CodeGen(Transformer):
                         opr_name = '@' + opr_descriptor['name']
                     else:
                         opr_name = '@' + opr_descriptor['name']
-                        if get_value is True and opr_type != 'ESCAPED_STRING':
-                            if temp_cnt_ptr == 1:
-                                self.tmp.write('{0}tmp_{1} = load {2}, {2}* {3}\n'.format(var_sign[temp_cnt_ptr],
-                                                                                      self.temp_cnt[temp_cnt_ptr],
-                                                                                      type_convert[opr_type], opr_name))
-                                opr_name = var_sign[temp_cnt_ptr] + "tmp_" + str(self.temp_cnt[temp_cnt_ptr])
+                        if get_value is True:
+                            if opr_type != 'ESCAPED_STRING':
+                                self.tmp.write('%tmp_{0} = load {1}, {1}* {2}\n'.format(self.temp_cnt[temp_cnt_ptr],
+                                                                                        type_convert[opr_type], opr_name))
+                                opr_name = "%tmp_" + str(self.temp_cnt[temp_cnt_ptr])
                                 self.temp_cnt[temp_cnt_ptr] += 1
                             else:
-                                self.tmp.write('{0}{1} = load {2}, {2}* {3}\n'.format(var_sign[temp_cnt_ptr],
-                                                                                      self.temp_cnt[temp_cnt_ptr],
-                                                                                      type_convert[opr_type], opr_name))
-                                opr_name = var_sign[temp_cnt_ptr] + str(self.temp_cnt[temp_cnt_ptr])
-                                self.temp_cnt[temp_cnt_ptr] += 1
+                                self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, opr_name))
+                                opr_name = '%tmp_' + str(self.temp_cnt[1])
+                                self.temp_cnt[1] += 1
         else:
+            if opr.type == 'ESCAPED_STRING':
+                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(opr.value)+1, opr.value)
+                self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* @.const{2}, i32 0, i32 0\n'.format(self.temp_cnt[1], len(opr.value)+1, self.const_cnt))
+                opr_name = '%tmp_' + str(self.temp_cnt[1])
+                self.temp_cnt[1] += 1
+                self.const_cnt += 1
+            else:
+                opr_name = opr.value
             opr_type = opr.type
-            opr_name = opr.value
 
         return opr_type, opr_name
 
@@ -549,15 +546,13 @@ class CodeGen(Transformer):
             if op_type == 'div' or op_type == 'rem':
                 op_type = 's' + op_type
             self.tmp.write(
-                '%tmp_{} = {} i32 {}, {}\n'.format(self.temp_cnt[temp_cnt_ptr], op_type,
-                                                first_name, second_name))
+                '%tmp_{} = {} i32 {}, {}\n'.format(self.temp_cnt[temp_cnt_ptr], op_type, first_name, second_name))
             self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
                                                                      "name": 'tmp_{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                      "by_value": True}
         elif res_type == 'SIGNED_FLOAT':
             self.tmp.write(
-                '%tmp_{} = f{} double {}, {}\n'.format(var_sign[temp_cnt_ptr], self.temp_cnt[temp_cnt_ptr], op_type,
-                                                    first_name, second_name))
+                '%tmp_{} = f{} double {}, {}\n'.format(self.temp_cnt[temp_cnt_ptr], op_type, first_name, second_name))
             self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_FLOAT", "size": REAL_SIZE,
                                                                      "name": 'tmp_{}'.format(self.temp_cnt[temp_cnt_ptr]),
                                                                      "by_value": True}
@@ -735,42 +730,8 @@ class CodeGen(Transformer):
         lhs_type, lhs_name = self.operand_fetch(lhs, False)
         rhs_type, rhs_name = self.operand_fetch(rhs, True)
 
-        if lhs_type == 'ESCAPED_STRING':
-            if rhs_type == 'ESCAPED_STRING':
-                if 'declare i8* @strcpy(i8*, i8*)' not in self.dcls:
-                    self.dcls += 'declare i8* @strcpy(i8*, i8*)\n'
-                if rhs.type == 'CNAME':
-                    self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, rhs_name))
-                    rhs_name = 'tmp_' + str(self.temp_cnt[1])
-                    self.temp_cnt[1] += 1
-
-                    self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, lhs_name))
-                    lhs_name = 'tmp_' + str(self.temp_cnt[1])
-                    self.temp_cnt[1] += 1
-
-                    self.tmp.write('%tmp_{} = call i8* @strcpy(i8* %{}, i8* %{})\n'.format(self.temp_cnt[1], lhs_name, rhs_name))
-                    self.temp_cnt[1] += 1
-                else:
-                    self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(rhs_name)+1, rhs_name)
-                    self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* @.const{2}, i32 0, i32 0\n'.format(self.temp_cnt[1], len(rhs_name)+1, self.const_cnt))
-                    rhs_name = str(self.temp_cnt[1])
-                    self.temp_cnt[1] += 1
-                    self.const_cnt += 1
-
-                    self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, lhs_name))
-                    lhs_name = str(self.temp_cnt[1])
-                    self.temp_cnt[1] += 1
-
-                    self.tmp.write('%tmp_{} = call i8* @strcpy(i8* %tmp_{}, i8* %tmp_{})\n'.format(self.temp_cnt[1], lhs_name, rhs_name))
-                    self.temp_cnt[1] += 1
-            else:
-                rhs_name = self.type_cast('CHAR', rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
-                self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, lhs_name))
-                self.tmp.write('store i8 {}, i8* %tmp_{}\n'.format(rhs_name, self.temp_cnt[1]))
-                self.temp_cnt[1] += 1
-        else:
-            rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
-            self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
+        rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
+        self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
 
     def jz(self, args):
         be = self.ss.pop()
@@ -949,10 +910,10 @@ class CodeGen(Transformer):
 
         if func_type == "ESCAPED_STRING":
             if a.type == 'CNAME':
-                self.tmp.write('%{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
-                    self.temp_cnt[1], STRING_MAX_SIZE, a_name))
-                self.tmp.write("ret i8* %{}\n".format(self.temp_cnt[1]))
-                self.temp_cnt[1] += 1
+                # self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
+                #     self.temp_cnt[1], STRING_MAX_SIZE, a_name))
+                self.tmp.write("ret i8* {}\n".format(a_name))
+                # self.temp_cnt[1] += 1
             else:
                 self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
                                                                                            len(a_name) + 1,
@@ -960,7 +921,7 @@ class CodeGen(Transformer):
                 self.tmp.write(
                     '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
                         len(a_name) + 1, self.const_cnt))
-                self.tmp.write("ret i8* %var_str_ptr{}\n".format(self.const_cnt))
+                self.tmp.write("ret [512 x i8] @.const{}\n".format(self.const_cnt))
                 self.const_cnt += 1
         else:
             self.tmp.write("ret {} {}\n".format(type_convert[a_type], a_name))

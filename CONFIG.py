@@ -12,7 +12,7 @@ type_convert = {"SIGNED_INT": "i" + str(INT_SIZE * 8),
                 "SIGNED_FLOAT": "double",
                 "CHAR": "i8",
                 "BOOL": "i1",
-                "ESCAPED_STRING": "[{} x i8]".format(STRING_MAX_SIZE),
+                "ESCAPED_STRING": "i8*",
                 "VOID": "void",
                 }
 
@@ -57,7 +57,7 @@ temp_value = {"SIGNED_INT": "0",
               "SIGNED_FLOAT": "0.0",
               "CHAR": "0",
               "BOOL": "false",
-              "ESCAPED_STRING": "a",
+              "ESCAPED_STRING": 'getelementptr inbounds ([1 x i8], [1 x i8]* @.str_func_def_ret, i32 0, i32 0)',
               "VOID": "",
               }
 
