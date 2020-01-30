@@ -51,7 +51,7 @@ INIT_ST = {"array": {},
            "true": {"type": "BOOL", "size": BOOL_SIZE},
            }
 
-temp_value = {"SIGNED_INT": "10000",
+temp_value = {"SIGNED_INT": "0",
               "SIGNED_FLOAT": "0.0",
               "CHAR": "0",
               "BOOL": "false",

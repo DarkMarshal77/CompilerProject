@@ -123,18 +123,18 @@ class CodeGen(Transformer):
                 print("Double declaration of '", var.value, "'")
             quit()
 
-        var_ptr_name = str(self.temp_cnt[1])
+        var_ptr_name = 'tmp_' + str(self.temp_cnt[1])
         self.temp_cnt[1] += 1
         if type == "ESCAPED_STRING":
             if not self.in_func_def:
-                self.tmp.write('%tmp_{} = alloca [{} x i8], align 16\n'.format(var_ptr_name, STRING_MAX_SIZE))
+                self.tmp.write('%{} = alloca [{} x i8], align 16\n'.format(var_ptr_name, STRING_MAX_SIZE))
                 self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": self.in_func_def}
             else:
                 self.ST()[var.value] = {"type": "ESCAPED_STRING", "name": var.value + '_ptr', "by_value": self.in_func_def}
         else:
             if not self.in_func_def:
                 self.tmp.write(
-                        '%tmp_{} = alloca {}, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
+                        '%{} = alloca {}, align {}\n'.format(var_ptr_name, type_convert[type], size_map[type]))
                 self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var_ptr_name,
                                         "by_value": self.in_func_def}
             else:
@@ -176,6 +176,9 @@ class CodeGen(Transformer):
         if args[0].type == 'ESCAPED_STRING':
             args[0].value = args[0].value[1:-1]
         self.ss.append(args[0])
+
+    def pop_ss(self):
+        self.ss.pop()
 
     def empty_ss(self, args):
         if len(self.ss) >= 10000:
@@ -738,14 +741,14 @@ class CodeGen(Transformer):
                     self.dcls += 'declare i8* @strcpy(i8*, i8*)\n'
                 if rhs.type == 'CNAME':
                     self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, rhs_name))
-                    rhs_name = str(self.temp_cnt[1])
+                    rhs_name = 'tmp_' + str(self.temp_cnt[1])
                     self.temp_cnt[1] += 1
 
                     self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, lhs_name))
-                    lhs_name = str(self.temp_cnt[1])
+                    lhs_name = 'tmp_' + str(self.temp_cnt[1])
                     self.temp_cnt[1] += 1
 
-                    self.tmp.write('%tmp_{} = call i8* @strcpy(i8* %tmp_{}, i8* %tmp_{})\n'.format(self.temp_cnt[1], lhs_name, rhs_name))
+                    self.tmp.write('%tmp_{} = call i8* @strcpy(i8* %{}, i8* %{})\n'.format(self.temp_cnt[1], lhs_name, rhs_name))
                     self.temp_cnt[1] += 1
                 else:
                     self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(rhs_name)+1, rhs_name)
@@ -933,4 +936,21 @@ class CodeGen(Transformer):
         # todo type cast return
         if func_type != a_type:
             raise Exception('ERROR: function type is {} but return type is {}'.format(func_type, a_type))
-        self.tmp.write("ret {} {}\n".format(type_convert[a_type], a_name))
+
+        if func_type == "ESCAPED_STRING":
+            if a.type == 'CNAME':
+                self.tmp.write('%{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
+                    self.temp_cnt[1], STRING_MAX_SIZE, a_name))
+                self.tmp.write("ret i8* %{}\n".format(self.temp_cnt[1]))
+                self.temp_cnt[1] += 1
+            else:
+                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
+                                                                                           len(a_name) + 1,
+                                                                                           a_name)
+                self.tmp.write(
+                    '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
+                        len(a_name) + 1, self.const_cnt))
+                self.tmp.write("ret i8* %var_str_ptr{}\n".format(self.const_cnt))
+                self.const_cnt += 1
+        else:
+            self.tmp.write("ret {} {}\n".format(type_convert[a_type], a_name))
