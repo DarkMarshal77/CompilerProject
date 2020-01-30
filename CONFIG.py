@@ -51,6 +51,13 @@ INIT_ST = {"array": {},
            "true": {"type": "BOOL", "size": BOOL_SIZE},
            }
 
+temp_value = {"SIGNED_INT": "10000",
+              "SIGNED_FLOAT": "0.0",
+              "CHAR": "0",
+              "BOOL": "false",
+              "ESCAPED_STRING": "a"
+              }
+
 unary_op = ["-", "~"]
 
 COMP_SIGN_TO_FLAG = {"SIGNED_INT": {

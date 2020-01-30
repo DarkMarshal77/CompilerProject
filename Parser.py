@@ -163,45 +163,25 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # parser = Lark(grammar)
 
-# print(parser.parse("""
-# <-- salam salam
-# hello world!
-# -->
-# function main() : integer
-# begin
-# real b;
-# integer a;
-# char c;
-# string s := "salam";
-# if (9 + b(20)) then
-# begin
-# a := -10.941 + b;
-# c := 't';
-# end
-# else begin
-# a := a + b;
-# -- salamdsfadsjfkaldg;
-# end;
-# end
-# """).pretty())
-
 print(parser.parse("""
-string glob_str := "COST_STR";
-integer glob := 1;
+
+function fib(integer n): integer begin
+    if (n == 1 or n == 2) then begin 
+        return 1;
+    end
+    else begin 
+        return fib(n - 2) + fib(n - 1);
+    end
+end
+
 function main() : integer
 begin
-integer b;
 integer a := 1;
-while (a <= 10) do begin
-    if (glob % 3 == 0 and glob % 2 == 0) then begin
-        write("glob is ");
-        write(glob);
-        write('\n');
-    end
-    glob := glob + 1;
+while (a <= 20) do begin
+    write(fib(a));
     a := a + 1;
+    write('\n');
 end
-write(glob_str);
 return 0;
 end
 """).pretty())

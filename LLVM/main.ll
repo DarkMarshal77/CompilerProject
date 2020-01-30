@@ -1,54 +1,51 @@
-@.const0 = private constant [3 x i8] c"%s\00"
-@.const1 = private constant [9 x i8] c"glob is \00"
-@.const2 = private constant [3 x i8] c"%d\00"
-@.const3 = private constant [3 x i8] c"%c\00"
-@.const4 = private constant [3 x i8] c"%s\00"
+@.const0 = private constant [3 x i8] c"%d\00"
+@.const1 = private constant [3 x i8] c"%c\00"
 
 
-@0 = global [512 x i8] c"COST_STR\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00", align 16
-@1 = global i32 1, align 4
+define i32 @fib(i32 %n_ptr)
+{
+%tmp_1 = icmp eq i32 %n_ptr, 1
+%tmp_2 = icmp eq i32 %n_ptr, 2
+%tmp_3 = or i1 %tmp_1, %tmp_2
+br i1 %tmp_3, label %L0, label %L1
+L0:
+ret i32 1
+br label %L2
+L1:
+%tmp_5 = sub i32 %n_ptr, 2
+%tmp_6 = call i32 (i32) @fib (i32 %tmp_5)
+%tmp_7 = sub i32 %n_ptr, 1
+%tmp_8 = call i32 (i32) @fib (i32 %tmp_7)
+%tmp_9 = add i32 %tmp_6, %tmp_8
+ret i32 %tmp_9
+br label %L2
+L2:
+ret i32 10000
+}
+
 define i32 @main()
 {
-%1 = alloca i32, align 4
-%2 = alloca i32, align 4
-store i32 1, i32* %2
-br label %L0
-L0:
-%3 = load i32, i32* %2
-%4 = icmp sle i32 %3, 10
-br i1 %4, label %L1, label %L2
-L1:
-%5 = load i32, i32* @1
-%6 = srem i32 %5, 3
-%7 = icmp eq i32 %6, 0
-%8 = load i32, i32* @1
-%9 = srem i32 %8, 2
-%10 = icmp eq i32 %9, 0
-%11 = and i1 %7, %10
-br i1 %11, label %L3, label %L4
+%tmp_1 = alloca i32, align 4
+store i32 1, i32* %1
+br label %L3
 L3:
-%str0 = getelementptr inbounds [3 x i8], [3 x i8]* @.const0, i32 0, i32 0
-%var_str_ptr1 = getelementptr inbounds [9 x i8], [9 x i8]* @.const1, i32 0, i32 0
-%12 = call i32 (i8*, ...) @printf(i8* %str0, i8* %var_str_ptr1)
-%13 = load i32, i32* @1
-%str2 = getelementptr inbounds [3 x i8], [3 x i8]* @.const2, i32 0, i32 0
-%14 = call i32 (i8*, ...) @printf(i8* %str2, i32 %13)
-%str3 = getelementptr inbounds [3 x i8], [3 x i8]* @.const3, i32 0, i32 0
-%15 = call i32 (i8*, ...) @printf(i8* %str3, i8 10)
-br label %L4
+%tmp_3 = load i32, i32* %1
+%tmp_4 = icmp sle i32 %tmp_3, 20
+br i1 %tmp_4, label %L4, label %L5
 L4:
-%16 = load i32, i32* @1
-%17 = add i32 %16, 1
-store i32 %17, i32* @1
-%18 = load i32, i32* %2
-%19 = add i32 %18, 1
-store i32 %19, i32* %2
-br label %L0
-L2:
-%str4 = getelementptr inbounds [3 x i8], [3 x i8]* @.const4, i32 0, i32 0
-%20 = getelementptr inbounds [512 x i8], [512 x i8]* @0, i32 0, i32 0
-%21 = call i32 (i8*, ...) @printf(i8* %str4, i8* %20)
+%tmp_5 = load i32, i32* %1
+%tmp_6 = call i32 (i32) @fib (i32 %tmp_5)
+%str0 = getelementptr inbounds [3 x i8], [3 x i8]* @.const0, i32 0, i32 0
+%tmp_7 = call i32 (i8*, ...) @printf(i8* %str0, i32 %tmp_6)
+%tmp_8 = load i32, i32* %1
+%tmp_9 = add i32 %tmp_8, 1
+store i32 %tmp_9, i32* %1
+%str1 = getelementptr inbounds [3 x i8], [3 x i8]* @.const1, i32 0, i32 0
+%tmp_10 = call i32 (i8*, ...) @printf(i8* %str1, i8 10)
+br label %L3
+L5:
 ret i32 0
+ret i32 10000
 }
 
 declare i32 @printf(i8*, ...)
