@@ -109,7 +109,6 @@ class CodeGen(Transformer):
             self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var_ptr_name, "by_value": self.in_func_def}
 
     def add_to_st(self, args):
-        print(self.ss)
         var = self.ss.pop()
         type = self.ss.pop()
         self.ss.append(var)
