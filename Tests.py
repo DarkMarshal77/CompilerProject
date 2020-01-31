@@ -162,3 +162,13 @@ function main(): integer begin
     write(a);
 end
 """
+
+test10 = """
+function write(): integer begin
+    return 0;
+end
+
+function main(): integer begin
+    return 0;
+end
+"""

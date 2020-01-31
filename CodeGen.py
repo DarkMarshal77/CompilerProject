@@ -866,6 +866,8 @@ class CodeGen(Transformer):
         out_type = self.ss.pop()
         args = self.ss.pop()
         func_name = self.ss.pop()
+        if func_name in self.ST_stack[0]:
+            raise Exception("Function name already in use")
         # self.scope_level += 1
         arg_types = Queue()
         for arg in args.queue:

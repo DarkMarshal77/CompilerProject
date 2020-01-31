@@ -100,8 +100,8 @@ e_eq: e_eq ">" e_lg -> comp_gt
 
 // _______________________ + - / * % - ~
 e_lg: e_lg "+" t -> add
-     | e_lg "-" t -> sub
-     | t
+    | e_lg "-" t -> sub
+    | t
 t: t "*" f -> mul
  | t "/" f -> div
  | t "%" f -> mod
@@ -184,4 +184,4 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # return 0;
 # end
 # """).pretty())
-print(parser.parse(test3).pretty())
+print(parser.parse(test10).pretty())
