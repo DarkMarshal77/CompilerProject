@@ -52,6 +52,20 @@ function main(): integer begin
     write(a + b * c);
     write('\n');
     write((a + b) * c);
+    write('\n');
+    write(b - 3 or e - 'a');
+    write('\n');
+    write(b - 2 or e - 'a');
+    write('\n');
+    write(b - 2 and e - 'a');
+    write('\n');
+    write(b - 2 or e - 'b');
+    write('\n');
+    write(b - g);
+    write('\n');
+    write(a * b + 13 % 4);
+    write('\n');
+    write((a * b + 13) % 4);
 end
 """
 
@@ -132,5 +146,12 @@ function main(): integer begin
     end else begin
         write(-1);
     end
+end
+"""
+
+test8 = """
+function main(): integer begin
+    integer a  := -0x12 +  0x30;
+    write(a);
 end
 """

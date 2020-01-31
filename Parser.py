@@ -125,10 +125,13 @@ exprs_prime: "," expr pop_ss_push_q exprs_prime
 id: CNAME -> id
 
 ?constant: SIGNED_INT
-        | "0x" SIGNED_INT
-        | SIGNED_FLOAT
-        | ESCAPED_STRING
-        | CHAR 
+         | HEX -> hex_convert
+         | SIGNED_FLOAT
+         | ESCAPED_STRING
+         | CHAR 
+         
+HEX: "0x" SIGNED_INT
+   | "-" "0x" SIGNED_INT
 
 ?type: "integer" -> integer_push
     | "real" -> real_push
@@ -181,4 +184,4 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # return 0;
 # end
 # """).pretty())
-print(parser.parse(test3).pretty())
+print(parser.parse(test8).pretty())

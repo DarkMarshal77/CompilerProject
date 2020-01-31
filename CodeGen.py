@@ -964,3 +964,8 @@ class CodeGen(Transformer):
         self.tmp.write("ret " + type_convert[func_type] + " " + temp_value[func_type] + "\n")
         self.tmp.write("}\n\n")
         self.display = ''
+
+    def hex_convert(self, args):
+        value = int(args[0].value, 0)
+        type = "SIGNED_INT"
+        return Node(value, type)
