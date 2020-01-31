@@ -151,7 +151,14 @@ end
 
 test8 = """
 function main(): integer begin
-    integer a  := -0x12 +  0x30;
+    integer a  := 18 - 2 + 1;
+    write(a);
+end
+"""
+
+test9 = """
+function main(): integer begin
+    integer a  := - 2;
     write(a);
 end
 """

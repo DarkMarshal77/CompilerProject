@@ -75,36 +75,36 @@ op: constant -> push_ss
   | id
 
 // _______________________ or and
-expr: expr_or "or" expr -> boolean_or
+expr: expr "or" expr_or -> boolean_or
     | expr_or
-expr_or: e "and" expr_or -> boolean_and
+expr_or: expr_or "and" e -> boolean_and
        | e
        
 // _______________________ | ^ & 
-e: e_or "|" e -> bitwise_or
+e: e "|" e_or -> bitwise_or
  | e_or
-e_or: e_xor "^" e_or -> bitwise_xor
+e_or: e_or "^" e_xor -> bitwise_xor
     | e_xor
-e_xor: e_and "&" e_xor -> bitwise_and
+e_xor: e_xor "&" e_and -> bitwise_and
      | e_and
      
 // _______________________ >= > < <= == <>
-e_and: e_eq "==" e_and -> comp_eq
-     | e_eq "<>" e_and -> comp_ne
+e_and: e_and "==" e_eq -> comp_eq
+     | e_and "<>" e_eq -> comp_ne
      | e_eq
-e_eq: e_lg ">" e_eq -> comp_gt
-    | e_lg ">=" e_eq -> comp_ge
-    | e_lg "<" e_eq -> comp_lt
-    | e_lg "<=" e_eq -> comp_le
+e_eq: e_eq ">" e_lg -> comp_gt
+    | e_eq ">=" e_lg -> comp_ge
+    | e_eq "<" e_lg -> comp_lt
+    | e_eq "<=" e_lg -> comp_le
     | e_lg
 
 // _______________________ + - / * % - ~
-e_lg: t "+" e_and -> add
-     | t "-" e_and -> sub
+e_lg: e_lg "+" t -> add
+     | e_lg "-" t -> sub
      | t
-t: f "*" t -> mul
- | f "/" t -> div
- | f "%" t -> mod
+t: t "*" f -> mul
+ | t "/" f -> div
+ | t "%" f -> mod
  | f
 f: "-" p
  | "~" p
@@ -134,10 +134,10 @@ HEX: "0x" SIGNED_INT
    | "-" "0x" SIGNED_INT
 
 ?type: "integer" -> integer_push
-    | "real" -> real_push
-    | "string" -> string_push
-    | "boolean" -> boolean_push
-    | "char" -> character_push
+     | "real" -> real_push
+     | "string" -> string_push
+     | "boolean" -> boolean_push
+     | "char" -> character_push
 
 loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin_loop
 make_begin_label_loop: -> make_begin_label_loop
@@ -184,4 +184,4 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # return 0;
 # end
 # """).pretty())
-print(parser.parse(test8).pretty())
+print(parser.parse(test3).pretty())
