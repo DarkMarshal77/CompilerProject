@@ -1030,3 +1030,6 @@ class CodeGen(Transformer):
             self.ss.append(temp_right_q.get())
             self.assignment(args)
 
+    def calc_arr_index(self, args):
+        indeces = self.ss.pop()
+        arr_token = self.ss.pop()

@@ -74,6 +74,7 @@ id_plus: "," id id_plus
 op: constant -> push_ss
   | function_call
   | id
+  | id push_q "[" dims "]" -> calc_arr_index
 
 // _______________________ or and
 expr: expr "or" expr_or -> boolean_or
@@ -194,15 +195,10 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # end
 # """).pretty())
 print(parser.parse("""
-function sum(a: integer, b: integer): integer begin
-    return a + b;
-end
-
 function main(): integer begin
     a: integer := 10;
     b: integer := 1.6;
     arr: array integer of [a+5, 6];
-    a := sum(a, b);
-    write(a);
+    arr[0, a];
 end
 """).pretty())
