@@ -971,3 +971,31 @@ class CodeGen(Transformer):
         value = int(args[0].value, 0)
         type = "SIGNED_INT"
         return Node(value, type)
+
+    def init_bulk(self, args):
+        temp = self.ss.pop()
+        self.push_q(args)
+        self.ss.append(temp)
+        self.pop_ss_push_q(args)
+
+    def bulk(self, args):
+        right_q = self.ss.pop()
+        left_q = self.ss.pop()
+        if len(right_q.queue) != len(left_q.queue):
+            raise Exception("RHS and LHS in bulk assignment need to be of the same size")
+        n = len(right_q.queue)
+
+        temp_right_q = Queue()
+
+        for i in range(n):
+            left_token = left_q.queue[i]
+            right_token = right_q.queue[i]
+            if not left_token.value in self.ST():
+                raise Exception("variable {} has not been defined".format(left_token.value))
+            right_type, right_name = self.operand_fetch(right_token, True)
+            temp_right_q.put(Node(right_name, right_type))
+        for i in range(n):
+            self.ss.append(left_q.get())
+            self.ss.append(temp_right_q.get())
+            self.assignment(args)
+

@@ -1,18 +1,18 @@
 test1 = """
-procedure f(integer a) begin
+procedure f(a: integer) begin
     write(a);
 end
 
 function main() : integer
 begin
-    integer a := 10;
+    a: integer := 10;
     f(a);
     return 0;
 end
 """
 
 test2 = """
-function fib(integer  n): integer
+function fib(n: integer): integer
 begin
     if (n == 1 or n == 0) then begin 
         return 1;
@@ -22,7 +22,7 @@ begin
 end
 
 function main(): integer begin
-    integer a := 0;
+    a:integer := 0;
     while(a <= 20) do begin
         write("fib of ");
         write(a);
@@ -37,17 +37,17 @@ end
 
 test3 = """
 function main(): integer begin
-    integer a := 2;
-    integer b := 3;
+    a:integer := 2;
+    b:integer := 3;
     
-    real c := 4.1;
-    real d := 5.9;
+    c :real := 4.1;
+    d :real := 5.9;
     
-    char e := 'a';
-    char f := 'b';
+    e : character := 'a';
+    f : character := 'b';
     
-    boolean g := true;
-    boolean h := false;
+    g: boolean := true;
+    h: boolean := false;
     
     write(a + b * c);
     write('\n');
@@ -70,26 +70,26 @@ end
 """
 
 test4 = """
-integer a := 10;
+a: integer := 10;
 
-procedure f(integer b) begin
-    integer a := 2;
+procedure f(b: integer) begin
+    a: integer := 2;
     write(a);
     write('\n');
 end
 
-procedure g(integer b) begin
-    real a := 1.5;
+procedure g(b: integer) begin
+    a: real := 1.5;
     write(a);
     write('\n');
 end
 
-procedure h(integer a) begin
+procedure h(a: integer) begin
     write(a);
     write('\n');
 end
 
-procedure i(integer b) begin
+procedure i(b: integer) begin
     write(a);
     write('\n');
 end
@@ -100,14 +100,14 @@ end
 """
 
 test5 = """
-integer a := 1;
+a: integer := 1;
 function main(): integer begin
     write(a);
-    integer a := 2;
+    a: integer := 2;
     write(a);
     if(true) then begin
         write(a);
-        integer a := 3;
+        a: integer := 3;
         write(a);
     end
     write(a);
@@ -132,9 +132,9 @@ end
 
 test7 = """
 function main(): integer begin
-    integer a := 1;
-    real  b := 3;
-    char c := 'c';
+    a: integer := 1;
+    b: real := 3;
+    c: character := 'c';
     
     if (a == 1) then begin
         if (b == 3) then begin
@@ -151,14 +151,14 @@ end
 
 test8 = """
 function main(): integer begin
-    integer a  := 18 - 2 + 1;
+    a: integer := 18 - 2 + 1;
     write(a);
 end
 """
 
 test9 = """
 function main(): integer begin
-    integer a  := - 2;
+    a: integer := - 2;
     write(a);
 end
 """

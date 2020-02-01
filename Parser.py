@@ -59,8 +59,8 @@ stl: st ";" empty_ss stl
    |
 empty_ss: -> empty_ss
 
-st: expr
-  | "(" id id_plus ")" assignment
+st: bulk
+  | expr
   | id assignment
   | var_dcl
   | loop 
@@ -69,6 +69,7 @@ st: expr
 
 id_plus: "," id id_plus 
        | "," id
+
 // ___________________________________________ expression handling here
 op: constant -> push_ss
   | function_call
@@ -153,6 +154,13 @@ ep: "else" jp_cjz block -> cjp
  
 CHAR: /'[^']*'/
 
+bulk: "(" id "," init_bulk bulk_left ")" ":=" push_q "(" bulk_right ")" -> bulk
+bulk_left: id pop_ss_push_q id_plus_bulk
+bulk_right: exprs
+id_plus_bulk: "," id pop_ss_push_q id_plus_bulk 
+            |
+init_bulk: -> init_bulk
+
 %import common.SIGNED_NUMBER
 %import common.SIGNED_INT
 %import common.SIGNED_FLOAT
@@ -185,15 +193,4 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # return 0;
 # end
 # """).pretty())
-print(parser.parse("""
-function sum(a: integer, b: integer): integer begin
-    return a + b;
-end
-
-function main(): integer begin
-    a: integer := 10;
-    b: integer := 1.6;
-    a := sum(a, b);
-    write(a);
-end
-""").pretty())
+print(parser.parse(test9).pretty())
