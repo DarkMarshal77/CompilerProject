@@ -11,7 +11,7 @@ start: func_def start
 global_var_dcl: global_simple_var
        | global_array_var
        
-global_simple_var: type id global_assignment_prime
+global_simple_var: id ":" type global_assignment_prime
 
 global_assignment_prime: global_assignment -> global_def_assignment
                 | -> global_def
@@ -23,7 +23,7 @@ global_assignment: ":=" constant -> push_ss
 var_dcl: simple_var
        | array_var
        
-simple_var: type id add_to_st assignment_prime
+simple_var: id ":" type add_to_st assignment_prime
 add_to_st: -> add_to_st
 assignment_prime: assignment
                 | -> pop_ss
@@ -137,7 +137,7 @@ HEX: "0x" SIGNED_INT
      | "real" -> real_push
      | "string" -> string_push
      | "boolean" -> boolean_push
-     | "char" -> character_push
+     | "character" -> character_push
 
 loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin_loop
 make_begin_label_loop: -> make_begin_label_loop
@@ -164,6 +164,7 @@ CHAR: /'[^']*'/
 
 COMMENT: "<--" /(.|\\n|\\r)+/ "-->"    
        | "--" /(.)+/ NEWLINE
+       | "//" /(.)+/ NEWLINE
 %ignore COMMENT
 """
 
@@ -184,4 +185,15 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # return 0;
 # end
 # """).pretty())
-print(parser.parse(test10).pretty())
+print(parser.parse("""
+function sum(a: integer, b: integer): integer begin
+    return a + b;
+end
+
+function main(): integer begin
+    a: integer := 10;
+    b: integer := 1.6;
+    a := sum(a, b);
+    write(a);
+end
+""").pretty())

@@ -54,8 +54,8 @@ class CodeGen(Transformer):
 
     def global_def_assignment(self, args):
         rhs = self.ss.pop()
-        lhs = self.ss.pop()
         type = self.ss.pop()
+        lhs = self.ss.pop()
 
         if type not in types:
             raise Exception("ERROR: Invalid var type, type = {}".format(type))
@@ -85,8 +85,8 @@ class CodeGen(Transformer):
             self.ST()[lhs.value] = {"type": type, "size": size_map[type], "name": var_ptr_name, "by_value": False}
 
     def global_def(self, args):
-        var = self.ss.pop()
         type = self.ss.pop()
+        var = self.ss.pop()
 
         if type not in types:
             raise Exception("ERROR: Invalid var type, type = {}".format(type))
@@ -109,8 +109,8 @@ class CodeGen(Transformer):
             self.ST()[var.value] = {"type": type, "size": size_map[type], "name": var_ptr_name, "by_value": self.in_func_def}
 
     def add_to_st(self, args):
-        var = self.ss.pop()
         type = self.ss.pop()
+        var = self.ss.pop()
         self.ss.append(var)
 
         if type not in types:
