@@ -28,7 +28,7 @@ add_to_st: -> add_to_st
 assignment_prime: assignment
                 | -> pop_ss
           
-array_var: id ":" "array" push_q "[" dims "]" "of" type -> make_array_dscp
+array_var: id ":" "array" type "of" push_q "[" dims "]" -> make_array_dscp
 dims: expr pop_ss_push_q dims_prime
 dims_prime: "," expr pop_ss_push_q dims_prime
           | 
@@ -193,4 +193,16 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 # return 0;
 # end
 # """).pretty())
-print(parser.parse(test9).pretty())
+print(parser.parse("""
+function sum(a: integer, b: integer): integer begin
+    return a + b;
+end
+
+function main(): integer begin
+    a: integer := 10;
+    b: integer := 1.6;
+    arr: array integer of [a+5, 6];
+    a := sum(a, b);
+    write(a);
+end
+""").pretty())
