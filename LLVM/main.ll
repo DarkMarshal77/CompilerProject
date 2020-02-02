@@ -1,6 +1,5 @@
 @.str_func_def_ret = private constant [1 x i8] c"\00"
-@.const0 = private constant [32 x i8] c"hello world!
-ashkan is here...	\00"
+@.const0 = private constant [32 x i8] c"hello world!\0Aashkan is here...\0D\00"
 @.const1 = private constant [3 x i8] c"%s\00"
 
 

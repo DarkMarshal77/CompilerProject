@@ -62,6 +62,7 @@ empty_ss: -> empty_ss
 st: bulk
   | expr
   | id assignment
+  | arr_use assignment
   | var_dcl
   | loop 
   | "return" expr -> ret
@@ -74,7 +75,7 @@ id_plus: "," id id_plus
 op: constant -> push_ss
   | function_call
   | id
-  | id push_q "[" dims "]" -> calc_arr_index
+  | arr_use
 
 // _______________________ or and
 expr: expr "or" expr_or -> boolean_or
@@ -125,6 +126,8 @@ exprs_prime: "," expr pop_ss_push_q exprs_prime
            | 
            
 id: CNAME -> id
+
+arr_use: id push_q "[" dims "]" -> calc_arr_index
 
 ?constant: SIGNED_INT
          | HEX -> hex_convert

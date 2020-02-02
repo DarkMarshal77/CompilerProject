@@ -73,6 +73,7 @@ class CodeGen(Transformer):
         if type == "ESCAPED_STRING":
             i = 0
             value_len = len(value_name)
+            value_name = self.replace_special_char(value_name)
             while i < STRING_MAX_SIZE - value_len:
                 value_name += '\\00'
                 i += 1
@@ -201,12 +202,14 @@ class CodeGen(Transformer):
             self.tmp.write('%tmp_{} = call i64 @strlen(i8* %tmp_{})\n'.format(self.temp_cnt[1], self.temp_cnt[1] - 1))
             self.temp_cnt[1] += 1
         else:
+            str_len = len(opr_name)
+            opr_name = self.replace_special_char(opr_name)
             self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
-                                                                                       len(opr_name) + 1,
+                                                                                       str_len + 1,
                                                                                        opr_name)
             self.tmp.write(
                 '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                    len(opr_name) + 1, self.const_cnt))
+                    str_len + 1, self.const_cnt))
             self.tmp.write(
                 '%tmp_{} = call i64 @strlen(i8* %var_str_ptr{})\n'.format(self.temp_cnt[1], self.const_cnt))
             self.temp_cnt[1] += 1
@@ -330,7 +333,6 @@ class CodeGen(Transformer):
             self.temp_cnt[1] += 1
             self.const_cnt += 1
         elif opr_type == 'ESCAPED_STRING':
-            print(opr_name)
             self.consts += '@.const{} = private constant [3 x i8] c"%s\\00"\n'.format(self.const_cnt)
             self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
@@ -423,8 +425,10 @@ class CodeGen(Transformer):
                                 self.temp_cnt[1] += 1
         else:
             if opr.type == 'ESCAPED_STRING':
-                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, len(opr.value)+1, opr.value)
-                self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* @.const{2}, i32 0, i32 0\n'.format(self.temp_cnt[1], len(opr.value)+1, self.const_cnt))
+                str_len = len(opr.value)
+                opr.value = self.replace_special_char(opr.value)
+                self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt, str_len+1, opr.value)
+                self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* @.const{2}, i32 0, i32 0\n'.format(self.temp_cnt[1], str_len+1, self.const_cnt))
                 opr_name = '%tmp_' + str(self.temp_cnt[1])
                 self.temp_cnt[1] += 1
                 self.const_cnt += 1
@@ -937,12 +941,14 @@ class CodeGen(Transformer):
                 self.tmp.write("ret i8* {}\n".format(a_name))
                 # self.temp_cnt[1] += 1
             else:
+                str_len = len(a_name)
+                a_name = self.replace_special_char(a_name)
                 self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
-                                                                                           len(a_name) + 1,
+                                                                                           str_len + 1,
                                                                                            a_name)
                 self.tmp.write(
                     '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                        len(a_name) + 1, self.const_cnt))
+                        str_len + 1, self.const_cnt))
                 self.tmp.write("ret [512 x i8] @.const{}\n".format(self.const_cnt))
                 self.const_cnt += 1
         else:
@@ -971,9 +977,12 @@ class CodeGen(Transformer):
             arr_dims_value.append(dim_name)
 
         temporary_arr_dims = arr_dims_value.copy()
+        calc_arr_index_helper = []
         while len(temporary_arr_dims) > 1:
+            calc_arr_index_helper.append(temporary_arr_dims.pop())
+
             mul_res = '%tmp_' + str(self.temp_cnt[1])
-            self.tmp.write('{} = mul i32 {}, {}\n'.format(mul_res, temporary_arr_dims.pop(), temporary_arr_dims.pop()))
+            self.tmp.write('{} = mul i32 {}, {}\n'.format(mul_res, calc_arr_index_helper[-1], temporary_arr_dims.pop()))
 
             temporary_arr_dims.append(mul_res)
             self.temp_cnt[1] += 1
@@ -982,11 +991,12 @@ class CodeGen(Transformer):
         self.temp_cnt[1] += 1
         if not self.in_func_def:
             self.tmp.write('%{} = alloca {}, i32 {}, align 16\n'.format(var_ptr_name, type_convert[arr_type], temporary_arr_dims[0]))
-            self.ST()[arr_name.value] = {"dims": arr_dims_value.copy(), "type": arr_type,
+            self.ST()[arr_name.value] = {"dims": arr_dims_value, "type": arr_type, 'calc_arr_index_helper': calc_arr_index_helper,
                                          "name": var_ptr_name, "by_value": False}
         else:
-            self.ST()[arr_name.value] = {"dims": arr_dims_value.copy(), "type": arr_type,
+            self.ST()[arr_name.value] = {"dims": arr_dims_value, "type": arr_type, 'calc_arr_index_helper': calc_arr_index_helper,
                                          "name": arr_name.value + '_ptr', "by_value": False}
+        temporary_arr_dims.clear()
 
     def proc_def(self, args):
         self.ss.append("VOID")
@@ -1031,5 +1041,38 @@ class CodeGen(Transformer):
             self.assignment(args)
 
     def calc_arr_index(self, args):
-        indeces = self.ss.pop()
+        indices = list(self.ss.pop().queue)
         arr_token = self.ss.pop()
+
+        arr_dims = self.ST()[arr_token.value]['dims'].copy()
+        if len(indices) != len(arr_dims):
+            indices.clear()
+            arr_dims.clear()
+            raise Exception('argument count of {} is not correct'.format(arr_token.value))
+
+        # addr calculation
+        arr_type, arr_pointer = self.operand_fetch(arr_token, False)
+        calc_arr_index_helper = self.ST()[arr_token.value]['calc_arr_index_helper'].copy()
+        while len(calc_arr_index_helper) > 0:
+            indice_type, indice_value = self.operand_fetch(indices.pop(), True)
+            self.tmp.write('%tmp_{} = mul i32 {}, {}\n'.format(self.temp_cnt[1], indice_value, calc_arr_index_helper.pop()))
+            self.temp_cnt[1] += 1
+
+            self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 %tmp_{3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, self.temp_cnt[1]-1))
+            arr_pointer = '%tmp_' + str(self.temp_cnt[1])
+            self.temp_cnt[1] += 1
+        indice_type, indice_value = self.operand_fetch(indices.pop(), True)
+        self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 {3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, indice_value))
+
+        self.ST()['{}__'.format(self.temp_cnt[1])] = {"type": arr_type,
+                                                      "name": 'tmp_{}'.format(self.temp_cnt[1]),
+                                                      "by_value": False}
+        self.ss.append(Node('{}__'.format(self.temp_cnt[1]), 'CNAME'))
+        self.temp_cnt[1] += 1
+
+        indices.clear()
+        arr_dims.clear()
+        calc_arr_index_helper.clear()
+
+    def replace_special_char(self, in_str):
+        return in_str.replace('\n', '\\0A').replace('\t', '\\09').replace('\r', '\\0D')
