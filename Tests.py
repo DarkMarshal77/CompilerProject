@@ -172,3 +172,15 @@ function main(): integer begin
     return 0;
 end
 """
+
+test11 = """
+function main(): integer begin
+    a: character := 5;
+    b: character := 1.5;
+    (a, b) := ('a', 'b');
+    write(a);
+    write('\n');
+    write(b);
+    write('\n');
+end
+"""

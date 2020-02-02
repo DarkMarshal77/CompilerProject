@@ -165,7 +165,8 @@ init_bulk: -> init_bulk
 %import common.SIGNED_NUMBER
 %import common.SIGNED_INT
 %import common.SIGNED_FLOAT
-%import common.ESCAPED_STRING
+//%import common.ESCAPED_STRING
+ESCAPED_STRING: /"[^"]*"/
 %import common.NEWLINE
 %import common.CNAME
 %import common.WS
@@ -178,27 +179,11 @@ COMMENT: "<--" /(.|\\n|\\r)+/ "-->"
 """
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
-# parser = Lark(grammar)
 
-# print(parser.parse("""
-# function fun() : string
-# begin
-# string s := "dfhdbfhj";
-# string tmp := s;
-# return tmp;
-# end
-#
-# function main() : integer
-# begin
-# write(fun());
-# return 0;
-# end
-# """).pretty())
 print(parser.parse("""
 function main(): integer begin
-    a: integer := 10;
-    b: integer := 1.6;
-    arr: array integer of [a+5, 6];
-    arr[0, a];
+    s: string;
+    s := "hello world!\nashkan is here...\t";
+    write(s);
 end
 """).pretty())
