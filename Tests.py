@@ -184,3 +184,18 @@ function main(): integer begin
     write('\n');
 end
 """
+
+test12 = """
+function main(): integer begin
+    a: array integer of [4];
+    i: integer := 0;
+    
+    a[0] := 1;
+    a[1] := 2;
+
+    (a[0], a[1]) := (a[1], a[0]);
+    write(a[0]);
+    write("\n");
+    write(a[1]);
+end
+"""

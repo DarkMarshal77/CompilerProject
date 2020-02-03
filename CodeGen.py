@@ -1103,3 +1103,9 @@ class CodeGen(Transformer):
 
     def replace_special_char(self, in_str):
         return in_str.replace('\t', '\\09').replace('\n', '\\0A').replace('\v', '\\0B').replace('\f', '\\0C').replace('\r', '\\0D')
+
+    def unary_sub(self, args):
+        operand = self.ss.pop()
+        self.ss.append(Node(0, "SIGNED_INT"))
+        self.ss.append(operand)
+        self.sub(args)

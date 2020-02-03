@@ -111,7 +111,7 @@ t: t "*" f -> mul
  | t "/" f -> div
  | t "%" f -> mod
  | f
-f: "-" p
+f: "-" p -> unary_sub
  | "~" p
  | p
 p: op
@@ -190,32 +190,9 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: integer := 3;
-    b: integer := 4;
-    arr: array integer of [a, b];
-    i: integer := 0;
-    j: integer := 0;
-    while (i < a) do
-    begin
-        j := 0;
-        while (j < b) do
-        begin
-            arr[i, j] := i + 2 * j;
-            j := j+1;
-        end
-        i := i+1;
-    end
-    i := 0;
-    while (i < a) do
-    begin
-        j := 0;
-        while (j < b) do
-        begin
-            write(arr[i, j]);
-            j := j + 1;
-        end
-        write('\n');
-        i := i+1;
-    end
+    a: real := 1.5;
+    b: real;
+    b:= - 18 + 2 - 1;
+    write(b);
 end
 """).pretty())
