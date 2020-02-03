@@ -1052,7 +1052,7 @@ class CodeGen(Transformer):
             self.assignment(args)
 
     def calc_arr_index(self, args):
-        indices = list(self.ss.pop().queue)
+        indices = self.ss.pop()
         arr_token = self.ss.pop()
 
         # finding arr descriptor
@@ -1072,8 +1072,8 @@ class CodeGen(Transformer):
                 arr_descriptor = self.ST_stack[0][arr_token.value]
 
         arr_dims = arr_descriptor['dims'].copy()
-        if len(indices) != len(arr_dims):
-            indices.clear()
+        if indices.qsize() != len(arr_dims):
+            indices = Queue()
             arr_dims.clear()
             raise Exception('argument count of {} is not correct'.format(arr_token.value))
 
@@ -1081,14 +1081,14 @@ class CodeGen(Transformer):
         arr_type, arr_pointer = self.operand_fetch(arr_token, False)
         calc_arr_index_helper = arr_descriptor['calc_arr_index_helper'].copy()
         while len(calc_arr_index_helper) > 0:
-            indice_type, indice_value = self.operand_fetch(indices.pop(), True)
+            indice_type, indice_value = self.operand_fetch(indices.get(), True)
             self.tmp.write('%tmp_{} = mul i32 {}, {}\n'.format(self.temp_cnt[1], indice_value, calc_arr_index_helper.pop()))
             self.temp_cnt[1] += 1
 
             self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 %tmp_{3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, self.temp_cnt[1]-1))
             arr_pointer = '%tmp_' + str(self.temp_cnt[1])
             self.temp_cnt[1] += 1
-        indice_type, indice_value = self.operand_fetch(indices.pop(), True)
+        indice_type, indice_value = self.operand_fetch(indices.get(), True)
         self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 {3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, indice_value))
 
         self.ST()['{}__'.format(self.temp_cnt[1])] = {"type": arr_type,
@@ -1097,7 +1097,7 @@ class CodeGen(Transformer):
         self.ss.append(Node('{}__'.format(self.temp_cnt[1]), 'CNAME'))
         self.temp_cnt[1] += 1
 
-        indices.clear()
+        indices = Queue()
         arr_dims.clear()
         calc_arr_index_helper.clear()
 

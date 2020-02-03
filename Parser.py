@@ -190,15 +190,32 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: array integer of [4];
+    a: integer := 3;
+    b: integer := 4;
+    arr: array integer of [a, b];
     i: integer := 0;
-    
-    a[0] := 1;
-    a[1] := 2;
-
-    (a[0], a[1]) := (a[1], a[0]);
-    write(a[0]);
-    write("\n");
-    write(a[1]);
+    j: integer := 0;
+    while (i < a) do
+    begin
+        j := 0;
+        while (j < b) do
+        begin
+            arr[i, j] := i + 2 * j;
+            j := j+1;
+        end
+        i := i+1;
+    end
+    i := 0;
+    while (i < a) do
+    begin
+        j := 0;
+        while (j < b) do
+        begin
+            write(arr[i, j]);
+            j := j + 1;
+        end
+        write('\n');
+        i := i+1;
+    end
 end
 """).pretty())
