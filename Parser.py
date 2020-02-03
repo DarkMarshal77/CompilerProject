@@ -177,10 +177,11 @@ init_bulk: -> init_bulk
 ESCAPED_STRING: /"[^"]*"/
 %import common.NEWLINE
 %import common.CNAME
-%import common.WS
+//%import common.WS
+WS: /(\\v|\\t|\\n|\\r|\\f| )/+
 %ignore WS
 
-COMMENT: "<--" /(.|\\n|\\r)+/ "-->"    
+COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"    
        | "--" /(.)+/ NEWLINE
        | "//" /(.)+/ NEWLINE
 %ignore COMMENT
@@ -190,32 +191,8 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: array [4, 5] of integer;
-    
-    i: integer := 0;
-    j: integer := 0;
-    
-    while (i < 4) do begin
-        j := 0;
-        while (j < 5) do begin
-            a[i, j] := i + j;
-            j := j + 1;
-        end
-        i := i + 1;
-    end
-    
-    i := 0;
-    j := 0;
-    
-    while (i < 4) do begin
-        j := 0;
-        while (j < 5) do begin
-            write(a[i, j]);
-            write("\t");
-            j := j + 1;
-        end
-        write("\n");
-        i := i + 1;
-    end
-end
+    n: real;
+    read(n);
+    write(n);
+end 
 """).pretty())

@@ -187,7 +187,7 @@ end
 
 test12 = """
 function main(): integer begin
-    a: array integer of [4];
+    a: array [4]] of integer;
     i: integer := 0;
     
     a[0] := 1;
@@ -199,3 +199,138 @@ function main(): integer begin
     write(a[1]);
 end
 """
+
+test13 = """
+function main(): integer begin
+    fib: array [2000] of integer;
+    fib[0] := 1;
+    fib[1] := 1;
+    
+    i: integer := 2;
+    while (i <= 30) do begin
+        fib[i] := fib[i - 1] + fib[i - 2];
+        write(fib[i]);
+        write("\n");
+        i := i + 1;
+    end
+end
+"""
+
+test14 = """
+function main(): integer begin
+    comb: array [100, 100] of integer;
+    
+    n: integer := 1;
+    k: integer := 1;
+    while (n < 30) do begin
+        k := 1;
+        while (k <= n) do begin
+            if (k == 1) then begin
+                comb[n, k] := n;
+            end else begin
+                if (n == k) then begin
+                    comb[n, k] := 1;
+                end else begin
+                    comb[n, k] := comb[n - 1, k] + comb[n - 1, k - 1]; 
+                end  
+            end
+            
+            write(n);
+            write(", ");
+            write(k);
+            write(": ");
+            write(comb[n, k]);
+            write("\n");
+            
+            k := k + 1;
+        end
+        n := n + 1;
+    end
+end
+"""
+
+test15 = """
+function main(): integer begin
+    s: array [100] of character;
+    s[0] := 'a';
+    s[1] := 's';
+    s[2] := 'h';
+    s[3] := 'k';
+    s[4] := 'a';
+    s[5] := 'n';
+    s[6] := '\0';
+    i: integer := 0;
+    
+    while (i <= 5) do begin
+        write(s[i]);
+        i := i + 1;
+    end
+end
+"""
+
+test16 = """
+function main(): integer begin
+    s: array [10] of boolean;
+    i: integer := 0;
+    while (i < 10) do begin
+        if (i % 2 == 0) then begin
+            s[i] := true;
+        end else begin
+            s[i] := false;
+        end
+        i := i + 1;
+    end
+    
+    i := 0;
+    while (i < 10) do begin
+        write(i);
+        write(" ");
+        write(s[i]);
+        write("\n");
+        i := i + 1;
+    end
+end
+"""
+
+test17 = """
+//this is a comment
+
+function main(): integer begin
+    write("salam");
+    <-- write("comment");
+    write("also comment");
+    write("here comment again");-->
+    write(" khubi?");
+    --      write("comment");
+    return 0;
+end
+"""
+
+test18 = """
+function main(): integer begin
+    n: integer;
+    read(n);
+    write(n);
+    write("\n");
+    
+    arr : array [n] of character;
+    i: integer;
+    i := 0;
+    
+    while (i < n) do begin
+        arr[i] := i;
+        i:= i + 1;
+    end
+    
+    i:= 0;
+    while (i < n) do begin
+        write(i);
+        write(' ');
+        write(arr[i]);
+        write('\n');
+        i := i + 1;
+    end
+end 
+"""
+
+

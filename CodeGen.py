@@ -241,9 +241,9 @@ class CodeGen(Transformer):
             self.temp_cnt[1] += 1
             self.const_cnt += 1
         elif opr_type == "SIGNED_FLOAT":
-            self.consts += '@.const{} = private constant [3 x i8] c"%f\\00"\n'.format(self.const_cnt)
+            self.consts += '@.const{} = private constant [4 x i8] c"%lf\\00"\n'.format(self.const_cnt)
             self.tmp.write(
-                '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                '%str{0} = getelementptr inbounds [4 x i8], [4 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                     self.const_cnt))
             self.tmp.write(
                 '%tmp_{} = call i32 (i8*, ...) @printf(i8* %str{}, {} {})\n'.format(self.temp_cnt[1], self.const_cnt,
@@ -312,9 +312,9 @@ class CodeGen(Transformer):
             self.temp_cnt[1] += 1
             self.const_cnt += 1
         elif opr_type == 'SIGNED_FLOAT':
-            self.consts += '@.const{} = private constant [3 x i8] c"%f\\00"\n'.format(self.const_cnt)
+            self.consts += '@.const{} = private constant [4 x i8] c"%lf\\00"\n'.format(self.const_cnt)
             self.tmp.write(
-                '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                '%str{0} = getelementptr inbounds [4 x i8], [4 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                     self.const_cnt))
             self.tmp.write(
                 '%tmp_{} = call i32 (i8*, ...) @scanf(i8* %str{}, double* {})\n'.format(self.temp_cnt[1], self.const_cnt,
