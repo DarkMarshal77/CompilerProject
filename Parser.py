@@ -112,7 +112,7 @@ t: t "*" f -> mul
  | t "%" f -> mod
  | f
 f: "-" p -> unary_sub
- | "~" p
+ | "~" p -> unary_not
  | p
 p: op
  | "(" expr ")"
@@ -190,12 +190,10 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: integer := 98;
-    b: character := 1.5;
-    (a, b) := (b, a);
-    write(a);
-    write('\n');
+    a: integer := 10;
+    c: integer := 11;
+    b: boolean;
+    b:= ~ (a <= c);
     write(b);
-    write('\n');
 end
 """).pretty())

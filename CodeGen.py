@@ -1112,3 +1112,13 @@ class CodeGen(Transformer):
         self.ss.append(Node(0, "SIGNED_INT"))
         self.ss.append(operand)
         self.sub(args)
+
+    def unary_not(self, args):
+        operand = self.ss.pop()
+        self.ss.append(Node("true", "BOOL"))
+        self.ss.append(operand)
+        self.boolean_and(args)
+        operand = self.ss.pop()
+        self.ss.append(Node(1, "SIGNED_INT"))
+        self.ss.append(operand)
+        self.sub(args)
