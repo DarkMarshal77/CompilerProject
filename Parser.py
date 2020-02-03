@@ -185,8 +185,30 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    s: string;
-    s := "hello world!\nashkan is here...\t";
-    write(s);
+    a: integer := 3;
+    b: integer := 4;
+    arr: array integer of [a, b];
+    i: integer := 0;
+    j: integer := 0;
+    while (i < a) do
+    begin
+        while (j < b) do
+        begin
+            arr[i, j] := i + 2 * j;
+            j := j+1;
+        end
+        i := i+1;
+    end
+    i := 0;
+    j := 0;
+    while (i < a) do
+    begin
+        while (j < b) do
+        begin
+            write(arr[i, j]);
+            j := j + 1;
+        end
+        i := i+1;
+    end
 end
 """).pretty())
