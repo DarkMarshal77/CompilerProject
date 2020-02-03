@@ -62,6 +62,7 @@ empty_ss: -> empty_ss
 st: bulk
   | expr
   | id assignment
+  | arr_use assignment
   | var_dcl
   | loop 
   | "return" expr -> ret
@@ -69,11 +70,14 @@ st: bulk
 
 id_plus: "," id id_plus 
        | "," id
+       | "," arr_use
+       | "," arr_use id_plus
 
 // ___________________________________________ expression handling here
 op: constant -> push_ss
   | function_call
   | id
+  | arr_use
 
 // _______________________ or and
 expr: expr "or" expr_or -> boolean_or
@@ -124,7 +128,6 @@ exprs_prime: "," expr pop_ss_push_q exprs_prime
            | 
            
 id: CNAME -> id
-  | arr_use
 
 arr_use: id push_q "[" dims "]" -> calc_arr_index
 
@@ -158,9 +161,12 @@ ep: "else" jp_cjz block -> cjp
 CHAR: /'[^']*'/
 
 bulk: "(" id "," init_bulk bulk_left ")" ":=" push_q "(" bulk_right ")" -> bulk
+    | "(" arr_use "," init_bulk bulk_left ")" ":=" push_q "(" bulk_right ")" -> bulk
 bulk_left: id pop_ss_push_q id_plus_bulk
+         | arr_use pop_ss_push_q id_plus_bulk
 bulk_right: exprs
 id_plus_bulk: "," id pop_ss_push_q id_plus_bulk 
+            | "," arr_use pop_ss_push_q id_plus_bulk 
             |
 init_bulk: -> init_bulk
 
@@ -184,11 +190,12 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: array string of [4];
+    a: array integer of [4];
     i: integer := 0;
     
-    a[0] := "salam";
-    a[1] := "ashkan";
+    a[0] := 1;
+    a[1] := 2;
+
     (a[0], a[1]) := (a[1], a[0]);
     write(a[0]);
     write("\n");
