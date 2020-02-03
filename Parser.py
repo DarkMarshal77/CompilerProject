@@ -62,7 +62,6 @@ empty_ss: -> empty_ss
 st: bulk
   | expr
   | id assignment
-  | arr_use assignment
   | var_dcl
   | loop 
   | "return" expr -> ret
@@ -75,7 +74,6 @@ id_plus: "," id id_plus
 op: constant -> push_ss
   | function_call
   | id
-  | arr_use
 
 // _______________________ or and
 expr: expr "or" expr_or -> boolean_or
@@ -126,6 +124,7 @@ exprs_prime: "," expr pop_ss_push_q exprs_prime
            | 
            
 id: CNAME -> id
+  | arr_use
 
 arr_use: id push_q "[" dims "]" -> calc_arr_index
 
@@ -185,30 +184,14 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: integer := 3;
-    b: integer := 4;
-    arr: array integer of [a, b];
+    a: array string of [4];
     i: integer := 0;
-    j: integer := 0;
-    while (i < a) do
-    begin
-        while (j < b) do
-        begin
-            arr[i, j] := i + 2 * j;
-            j := j+1;
-        end
-        i := i+1;
-    end
-    i := 0;
-    j := 0;
-    while (i < a) do
-    begin
-        while (j < b) do
-        begin
-            write(arr[i, j]);
-            j := j + 1;
-        end
-        i := i+1;
-    end
+    
+    a[0] := "salam";
+    a[1] := "ashkan";
+    (a[0], a[1]) := (a[1], a[0]);
+    write(a[0]);
+    write("\n");
+    write(a[1]);
 end
 """).pretty())

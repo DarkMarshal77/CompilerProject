@@ -754,6 +754,17 @@ class CodeGen(Transformer):
         lhs_type, lhs_name = self.operand_fetch(lhs, False)
         rhs_type, rhs_name = self.operand_fetch(rhs, True)
 
+        # todo uncomment
+        # real_rhs_type = rhs.type
+        # if rhs.type == 'CNAME':
+        #     for st in self.ST_stack:
+        #         if rhs in st:
+        #             real_rhs_type = st[rhs.value]['type']
+        # if lhs_type == real_rhs_type:
+        #     self.ss.append(Node(1, 'SIGNED_INT'))
+        # else:
+        #     self.ss.append(Node(0, 'SIGNED_INT'))
+
         rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
         self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
 
