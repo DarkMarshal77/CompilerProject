@@ -190,9 +190,12 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: real := 1.5;
-    b: real;
-    b:= - 18 + 2 - 1;
+    a: integer := 98;
+    b: character := 1.5;
+    (a, b) := (b, a);
+    write(a);
+    write('\n');
     write(b);
+    write('\n');
 end
 """).pretty())

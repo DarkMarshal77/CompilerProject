@@ -1040,12 +1040,15 @@ class CodeGen(Transformer):
         temp_right_q = Queue()
 
         for i in range(n):
-            left_token = left_q.queue[i]
             right_token = right_q.queue[i]
-            if not left_token.value in self.ST():
-                raise Exception("variable {} has not been defined".format(left_token.value))
             right_type, right_name = self.operand_fetch(right_token, True)
-            temp_right_q.put(Node(right_name, right_type))
+            if right_token.type == 'CNAME':
+                self.ST()[right_name] = {"type": right_type,
+                                         "name": right_name[1:],
+                                         "by_value": True}
+                temp_right_q.put(Node(right_name, 'CNAME'))
+            else:
+                temp_right_q.put(Node(right_name, right_type))
         for i in range(n):
             self.ss.append(left_q.get())
             self.ss.append(temp_right_q.get())
