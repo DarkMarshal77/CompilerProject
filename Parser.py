@@ -28,7 +28,7 @@ add_to_st: -> add_to_st
 assignment_prime: assignment
                 | -> pop_ss
           
-array_var: id ":" "array" type "of" push_q "[" dims "]" -> make_array_dscp
+array_var: id ":" "array" push_q "[" dims "]" "of" type -> make_array_dscp
 dims: expr pop_ss_push_q dims_prime
 dims_prime: "," expr pop_ss_push_q dims_prime
           | 
@@ -190,10 +190,32 @@ parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
 print(parser.parse("""
 function main(): integer begin
-    a: integer := 10;
-    c: integer := 11;
-    b: boolean;
-    b:= ~ (a <= c);
-    write(b);
+    a: array [4, 5] of integer;
+    
+    i: integer := 0;
+    j: integer := 0;
+    
+    while (i < 4) do begin
+        j := 0;
+        while (j < 5) do begin
+            a[i, j] := i + j;
+            j := j + 1;
+        end
+        i := i + 1;
+    end
+    
+    i := 0;
+    j := 0;
+    
+    while (i < 4) do begin
+        j := 0;
+        while (j < 5) do begin
+            write(a[i, j]);
+            write("\t");
+            j := j + 1;
+        end
+        write("\n");
+        i := i + 1;
+    end
 end
 """).pretty())

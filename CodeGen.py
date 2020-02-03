@@ -966,8 +966,8 @@ class CodeGen(Transformer):
             self.tmp.write("ret {} {}\n".format(type_convert[a_type], a_name))
 
     def make_array_dscp(self, args):
-        arr_dims = self.ss.pop()
         arr_type = self.ss.pop()
+        arr_dims = self.ss.pop()
         arr_name = self.ss.pop()
 
         if arr_type not in types:
