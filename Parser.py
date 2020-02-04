@@ -156,7 +156,7 @@ loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -
 make_begin_label_loop: -> make_begin_label_loop
 branch_middle_loop: -> branch_middle_loop
 
-conditional: "if" "(" expr ")" jz "then" block ep
+conditional: "if" expr jz "then" block ep
 
 jz: -> jz
 jp_cjz: -> jp_cjz
@@ -195,20 +195,4 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse("""
-function main(): integer begin
-    a:integer := 2;
-    b:integer := 3;
-    
-    c :real := 4.1;
-    d :real := 5.9;
-    
-    e : character := 'a';
-    f : character := 'b';
-    
-    g: boolean := true;
-    h: boolean := false;
-    
-    write();
-end
-""").pretty())
+print(parser.parse(official_test_2).pretty())
