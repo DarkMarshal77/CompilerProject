@@ -50,7 +50,7 @@ call_proc_def: -> proc_def
 
 args: var_dcl pop_ss_push_q args_prime
     | 
-args_prime: "," var_dcl pop_ss_push_q args_prime
+args_prime: ";" var_dcl pop_ss_push_q args_prime
           | 
 pop_ss_push_q: -> pop_ss_push_q
 
@@ -152,7 +152,7 @@ HEX: "0x" SIGNED_INT
      | "character" -> character_push
      | "long" -> long_push
 
-loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin_loop
+loop: make_begin_label_loop "while" expr branch_middle_loop "do" block -> jp_begin_loop
 make_begin_label_loop: -> make_begin_label_loop
 branch_middle_loop: -> branch_middle_loop
 
@@ -195,4 +195,4 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse(official_test_2).pretty())
+print(parser.parse(official_test_4).pretty())
