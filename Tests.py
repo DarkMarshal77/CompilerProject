@@ -451,6 +451,35 @@ function main(): integer begin
 end
 """
 
+test24 = """
+global: array [10] of integer;
+
+procedure print_arr(n: array [22] of character)
+begin
+    i: integer := 0;
+    while i < 22 do
+    begin
+        write("n[");
+        write(i);
+        write("] = ");
+        write(n[i]);
+        write('\n');
+        i := i+1;
+    end
+end
+
+procedure init_arr(n: array [22] of character)
+begin
+    n := "SALAM!SALAMATI GOGOLO?";
+end
+
+function main(): integer begin
+    local: array [22] of character;
+    init_arr(local);
+    print_arr(local);
+end
+"""
+
 official_test_1 = """
 function main() : integer
 begin
@@ -465,7 +494,8 @@ begin
     a : integer := 2 ;
     b : integer := 3 ;
     c : real ; 
-    c := b / a ; 
+    c := b / a * 1.0; 
+    write(c);
     if c <> 1 then
     begin 
         write("not equal ! ") ;

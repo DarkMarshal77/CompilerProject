@@ -916,8 +916,12 @@ class CodeGen(Transformer):
             signature = self.make_func_signature(output_type, object_args)
             output_string = "("
             for arg in args.queue:
-                a_type, a_name = self.operand_fetch(arg, True)
-                output_string = output_string + type_convert[a_type] + " " + a_name + ", "
+                arg_descriptor = dict()
+                a_type, a_name = self.operand_fetch(arg, True, arg_descriptor)
+                if arg_descriptor:
+                    output_string = output_string + type_convert[a_type] + "* " + a_name + ", "
+                else:
+                    output_string = output_string + type_convert[a_type] + " " + a_name + ", "
             output_string = output_string[:-2] + ")"
             if not list(args.queue):
                 output_string = "()"
@@ -942,7 +946,7 @@ class CodeGen(Transformer):
             return type_convert[output_type] + "()"
         signature = type_convert[output_type] + " ("
         for arg in object_args.queue:
-            signature = signature + type_convert[arg] + ", "
+            signature = signature + arg + ", "
         signature = signature[:-2]
         signature = signature + ")"
         return signature
@@ -955,23 +959,22 @@ class CodeGen(Transformer):
             raise Exception("Function name already in use")
 
         arg_types = Queue()
-        for arg in args.queue:
-            arg_type, arg_name = self.operand_fetch(arg, False)
-            arg_types.put(arg_type)
+        func_args = ''
+        while args.qsize() > 0:
+            arg_descriptor = dict()
+            arg = args.get()
+            arg_type, arg_name = self.operand_fetch(arg, False, arg_descriptor)
+            if arg_descriptor:
+                arg_types.put(type_convert[arg_type]+'*')
+                func_args += '{}* {}, '.format(type_convert[arg_type], arg_name)
+            else:
+                arg_types.put(type_convert[arg_type])
+                func_args += '{} {}, '.format(type_convert[arg_type], arg_name)
 
         self.ST_stack[0][func_name.value] = {"out_type": out_type, "args": arg_types}
         self.display = func_name.value
 
-        func_args = ''
-        while args.qsize() > 1:
-            arg = args.get()
-            arg_type, arg_name = self.operand_fetch(arg, False)
-            func_args += '{} {}, '.format(type_convert[arg_type], arg_name)
-        if args.qsize() == 1:
-            arg = args.get()
-            arg_type, arg_name = self.operand_fetch(arg, False)
-            func_args += '{} {}'.format(type_convert[arg_type], arg_name)
-
+        func_args = func_args[:-2]
         self.tmp.write('define {} @{}({})\n'.format(type_convert[out_type], func_name, func_args))
         self.tmp.write('{\n')
 
@@ -1075,6 +1078,7 @@ class CodeGen(Transformer):
         else:
             self.ST()[arr_name.value] = {"dims": arr_dims_value, "type": arr_type, 'calc_arr_index_helper': calc_arr_index_helper,
                                          "name": arr_name.value + '_ptr', "by_value": False}
+        self.ss.append(arr_name)
         temporary_arr_dims.clear()
 
     def make_global_array_dscp(self, args):

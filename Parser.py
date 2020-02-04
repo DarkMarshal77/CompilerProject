@@ -32,10 +32,11 @@ add_to_st: -> add_to_st
 assignment_prime: assignment
                 | -> pop_ss
           
-array_var: id ":" "array" push_q "[" dims "]" "of" type -> make_array_dscp
+array_var: id ":" "array" push_q "[" dims "]" "of" type make_array_dscp -> pop_ss
 dims: expr pop_ss_push_q dims_prime
 dims_prime: "," expr pop_ss_push_q dims_prime
           | 
+make_array_dscp: -> make_array_dscp
          
 assignment: ":=" expr -> assignment
 
@@ -195,4 +196,4 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse(official_test_4).pretty())
+print(parser.parse(test24).pretty())
