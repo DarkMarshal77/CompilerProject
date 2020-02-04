@@ -527,8 +527,10 @@ begin
 
     while index < 10 do 
     begin
-        arr[index] := power(index, array[index]) ;
+        arr[index] := index;
+        arr[index] := product(index, arr[index]) ;
         print(arr[index]) ;
+        index := index + 1;
     end 
 
     

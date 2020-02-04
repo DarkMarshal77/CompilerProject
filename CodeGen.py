@@ -948,13 +948,12 @@ class CodeGen(Transformer):
         return signature
 
     def function_def(self, args):
-        # print('function_def called')
         out_type = self.ss.pop()
         args = self.ss.pop()
         func_name = self.ss.pop()
         if func_name in self.ST_stack[0]:
             raise Exception("Function name already in use")
-        # self.scope_level += 1
+
         arg_types = Queue()
         for arg in args.queue:
             arg_type, arg_name = self.operand_fetch(arg, False)
@@ -981,7 +980,6 @@ class CodeGen(Transformer):
         self.ss.append(self.ST_stack.pop())
 
     def push_st(self, args):
-        # print('push_st called')
         self.scope_level += 1
         if self.ss and type(self.ss[-1]) == dict:
             self.ST_stack.append(self.ss.pop())
@@ -989,7 +987,6 @@ class CodeGen(Transformer):
             self.ST_stack.append(INIT_ST.copy())
 
     def pop_st(self, args):
-        # print('pop_st called')
         self.ST_stack.pop()
         self.scope_level -= 1
 
@@ -1163,20 +1160,8 @@ class CodeGen(Transformer):
         arr_token = self.ss.pop()
 
         # finding arr descriptor
-        arr_descriptor = {}
-        found = False
-        level = self.scope_level
-        while level > 0:
-            if arr_token.value in self.ST_stack[level]:
-                arr_descriptor = self.ST_stack[level][arr_token.value]
-                found = True
-                break
-            level -= 1
-        if not found:
-            if arr_token.value not in self.ST_stack[0]:
-                raise Exception('ERROR: {} is not defined.'.format(arr_token.value))
-            else:
-                arr_descriptor = self.ST_stack[0][arr_token.value]
+        arr_descriptor = dict()
+        arr_type, arr_pointer = self.operand_fetch(arr_token, False, arr_descriptor)
 
         arr_dims = arr_descriptor['dims'].copy()
         if indices.qsize() != len(arr_dims):
@@ -1185,9 +1170,7 @@ class CodeGen(Transformer):
             raise Exception('argument count of {} is not correct'.format(arr_token.value))
 
         # addr calculation
-        arr_type, arr_pointer = self.operand_fetch(arr_token, False)
-
-        if found:  # means local array
+        if not arr_descriptor['global']:
             calc_arr_index_helper = arr_descriptor['calc_arr_index_helper'].copy()
             while len(calc_arr_index_helper) > 0:
                 indice_type, indice_value = self.operand_fetch(indices.get(), True)
