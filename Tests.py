@@ -392,3 +392,31 @@ function main(): integer begin
     end
 end
 """
+
+test22 = """
+glob_c1: array [100] of character;
+glob_c2: array [100] of character;
+str: string;
+function main(): integer 
+begin
+    c: array [100] of character;
+    c2: array [100] of character;
+    str := "fkjh fhghkbkhb bg";
+    //write(str);
+    glob_c1 := str;
+    glob_c2 := glob_c1;
+    write(glob_c2[0]);
+    write('\n');
+    c := str;
+    glob_c2 := c;
+    write(glob_c2[0]);
+    write('\n');
+    glob_c1 := str;
+    c := glob_c1;
+    write(c[0]);
+    write('\n');
+    c2 := str;
+    c := c2;
+    write(c[0]);
+end
+"""

@@ -394,7 +394,7 @@ class CodeGen(Transformer):
                                                       "by_value": True}
         self.ss.append(Node('{}__'.format(scanf_return_var), 'CNAME'))
 
-    def operand_fetch(self, opr, get_value):
+    def operand_fetch(self, opr, get_value, arr_decs=None):
         temp_cnt_ptr = 0 if self.scope_level == 0 else 1
         if opr.type == 'CNAME':
             found = False
@@ -402,6 +402,10 @@ class CodeGen(Transformer):
             while level > 0:
                 if opr.value in self.ST_stack[level]:
                     opr_descriptor = self.ST_stack[level][opr.value]
+                    if arr_decs is not None and 'dims' in opr_descriptor:
+                        arr_decs['global'] = False
+                        arr_decs.update(opr_descriptor)
+                        get_value = False
                     opr_type = opr_descriptor['type']
                     if opr_descriptor['by_value']:
                         opr_name = '%' + opr_descriptor['name']
@@ -421,6 +425,11 @@ class CodeGen(Transformer):
                     raise Exception('ERROR: {} is not defined.'.format(opr.value))
                 else:
                     opr_descriptor = self.ST_stack[0][opr.value]
+                    if arr_decs is not None and 'dims' in opr_descriptor:
+                        arr_decs['global'] = True
+                        arr_decs.update(opr_descriptor)
+                        get_value = False
+
                     opr_type = opr_descriptor['type']
                     if opr_descriptor['by_value']:
                         opr_name = '@' + opr_descriptor['name']
@@ -786,8 +795,10 @@ class CodeGen(Transformer):
         if lhs.type != 'CNAME':
             raise Exception('Left-hand-side must be a variable.')
 
-        lhs_type, lhs_name = self.operand_fetch(lhs, False)
-        rhs_type, rhs_name = self.operand_fetch(rhs, True)
+        lhs_desc = dict()
+        rhs_desc = dict()
+        lhs_type, lhs_name = self.operand_fetch(lhs, False, lhs_desc)
+        rhs_type, rhs_name = self.operand_fetch(rhs, True, rhs_desc)
 
         # todo uncomment
         # real_rhs_type = rhs.type
@@ -800,8 +811,33 @@ class CodeGen(Transformer):
         # else:
         #     self.ss.append(Node(0, 'SIGNED_INT'))
 
-        rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
-        self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
+        if lhs_desc and lhs_desc['type'] == 'CHAR':
+            if rhs_type != 'ESCAPED_STRING' and not (rhs_desc and rhs_desc['type'] == 'CHAR'):
+                raise Exception('ERROR: {} Cannot assign to array of CHAR'.format(rhs_type))
+            if len(lhs_desc['dims']) != 1:
+                raise Exception('ERROR: Cannot assign to array of CHAR')
+
+            if 'declare i8* @strcpy(i8*, i8*)' not in self.dcls:
+                self.dcls += 'declare i8* @strcpy(i8*, i8*)\n'
+            if lhs_desc['global']:
+                self.tmp.write('%tmp_{} = bitcast [{} x i8]* {} to i8*\n'.format(self.temp_cnt[1], lhs_desc['dims'][0], lhs_name))
+                lhs_name = '%tmp_'+str(self.temp_cnt[1])
+                self.temp_cnt[1] += 1
+            if rhs_desc and rhs_desc['global']:
+                self.tmp.write('%tmp_{} = bitcast [{} x i8]* {} to i8*\n'.format(self.temp_cnt[1], rhs_desc['dims'][0], rhs_name))
+                rhs_name = '%tmp_'+str(self.temp_cnt[1])
+                self.temp_cnt[1] += 1
+            self.tmp.write('call i8* @strcpy(i8* {}, i8* {})\n'.format(lhs_name, rhs_name))
+        else:
+            if lhs_name[0] == '@' and lhs_type == 'ESCAPED_STRING':
+                self.tmp.write('%tmp_{} = bitcast [{} x i8]* {} to i8*\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, lhs_name))
+                lhs_name = '%tmp_'+str(self.temp_cnt[1])
+                self.temp_cnt[1] += 1
+                rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
+                self.tmp.write('call i8* @strcpy(i8* {}, i8* {})\n'.format(lhs_name, rhs_name))
+            else:
+                rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
+                self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
 
     def jz(self, args):
         be = self.ss.pop()
