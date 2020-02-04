@@ -1044,6 +1044,39 @@ class CodeGen(Transformer):
                                          "name": arr_name.value + '_ptr', "by_value": False}
         temporary_arr_dims.clear()
 
+    def make_global_array_dscp(self, args):
+        arr_type = self.ss.pop()
+        arr_dims = self.ss.pop()
+        arr_name = self.ss.pop()
+
+        if arr_type not in types:
+            raise Exception("ERROR: Invalid array type, type = {}".format(arr_type))
+
+        if arr_name.value in self.ST_stack[0]:
+            if arr_name.value in INIT_ST:
+                print("'", arr_name.value, "' is a reserved name. Try another name for your variable.")
+            else:
+                print("Double declaration of '", arr_name.value, "'")
+            quit()
+
+        arr_dims_value = []
+        while not arr_dims.empty():
+            dim = arr_dims.get()
+            dim_type, dim_name = self.operand_fetch(dim, True)
+            dim_name = self.type_cast('SIGNED_INT', dim_name, dim_type, False if dim.type == 'CNAME' else True)
+            arr_dims_value.append(dim_name)
+
+        temporary_arr_dims = arr_dims_value.copy()
+        arr_ptr_type = type_convert[arr_type]
+        while len(temporary_arr_dims) > 0:
+            arr_ptr_type = '[{} x {}]'.format(temporary_arr_dims.pop(), arr_ptr_type)
+
+        var_ptr_name = arr_name+'_ptr'
+        if not self.in_func_def:
+            self.tmp.write('@{} = global {} zeroinitializer, align 16\n'.format(var_ptr_name, arr_ptr_type))
+            self.ST()[arr_name.value] = {"dims": arr_dims_value, "type": arr_type, "name": var_ptr_name, "by_value": False}
+        temporary_arr_dims.clear()
+
     def proc_def(self, args):
         self.ss.append("VOID")
         self.function_def(args)
@@ -1117,17 +1150,29 @@ class CodeGen(Transformer):
 
         # addr calculation
         arr_type, arr_pointer = self.operand_fetch(arr_token, False)
-        calc_arr_index_helper = arr_descriptor['calc_arr_index_helper'].copy()
-        while len(calc_arr_index_helper) > 0:
-            indice_type, indice_value = self.operand_fetch(indices.get(), True)
-            self.tmp.write('%tmp_{} = mul i32 {}, {}\n'.format(self.temp_cnt[1], indice_value, calc_arr_index_helper.pop()))
-            self.temp_cnt[1] += 1
 
-            self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 %tmp_{3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, self.temp_cnt[1]-1))
-            arr_pointer = '%tmp_' + str(self.temp_cnt[1])
-            self.temp_cnt[1] += 1
-        indice_type, indice_value = self.operand_fetch(indices.get(), True)
-        self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 {3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, indice_value))
+        if found:  # means local array
+            calc_arr_index_helper = arr_descriptor['calc_arr_index_helper'].copy()
+            while len(calc_arr_index_helper) > 0:
+                indice_type, indice_value = self.operand_fetch(indices.get(), True)
+                self.tmp.write('%tmp_{} = mul i32 {}, {}\n'.format(self.temp_cnt[1], indice_value, calc_arr_index_helper.pop()))
+                self.temp_cnt[1] += 1
+
+                self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 %tmp_{3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, self.temp_cnt[1]-1))
+                arr_pointer = '%tmp_' + str(self.temp_cnt[1])
+                self.temp_cnt[1] += 1
+            indice_type, indice_value = self.operand_fetch(indices.get(), True)
+            self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i32 {3}\n'.format(self.temp_cnt[1], type_convert[arr_type], arr_pointer, indice_value))
+            calc_arr_index_helper.clear()
+        else:
+            temporary_arr_dims = arr_descriptor['dims'].copy()
+            arr_ptr_type = type_convert[arr_type]
+            adr_calc = ''
+            while len(temporary_arr_dims) > 0:
+                indice_type, indice_value = self.operand_fetch(indices.get(), True)
+                adr_calc = '{}, i32 {}'.format(adr_calc, indice_value)
+                arr_ptr_type = '[{} x {}]'.format(temporary_arr_dims.pop(), arr_ptr_type)
+            self.tmp.write('%tmp_{0} = getelementptr inbounds {1}, {1}* {2}, i64 0{3}\n'.format(self.temp_cnt[1], arr_ptr_type, arr_pointer, adr_calc))
 
         self.ST()['{}__'.format(self.temp_cnt[1])] = {"type": arr_type,
                                                       "name": 'tmp_{}'.format(self.temp_cnt[1]),
@@ -1137,7 +1182,6 @@ class CodeGen(Transformer):
 
         indices = Queue()
         arr_dims.clear()
-        calc_arr_index_helper.clear()
 
     def replace_special_char(self, in_str):
         return in_str.replace('\t', '\\09').replace('\n', '\\0A').replace('\v', '\\0B').replace('\f', '\\0C').replace('\r', '\\0D')

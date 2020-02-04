@@ -360,3 +360,35 @@ function main(): integer begin
     end
 end
 """
+
+test21 = """
+comb: array [100, 100] of integer;
+function main(): integer begin    
+    n: integer := 1;
+    k: integer := 1;
+    while (n < 30) do begin
+        k := 1;
+        while (k <= n) do begin
+            if (k == 1) then begin
+                comb[n, k] := n;
+            end else begin
+                if (n == k) then begin
+                    comb[n, k] := 1;
+                end else begin
+                    comb[n, k] := comb[n - 1, k] + comb[n - 1, k - 1]; 
+                end  
+            end
+            
+            write(n);
+            write(", ");
+            write(k);
+            write(": ");
+            write(comb[n, k]);
+            write("\n");
+            
+            k := k + 1;
+        end
+        n := n + 1;
+    end
+end
+"""

@@ -16,8 +16,12 @@ global_simple_var: id ":" type global_assignment_prime
 global_assignment_prime: global_assignment -> global_def_assignment
                 | -> global_def
           
-global_array_var: "array" type id global_assignment_prime
-         
+global_array_var: id ":" "array" push_q "[" global_dims "]" "of" type -> make_global_array_dscp
+global_dims: push_const pop_ss_push_q global_dims_prime
+global_dims_prime: "," push_const pop_ss_push_q global_dims_prime
+          | 
+push_const: constant -> push_ss
+
 global_assignment: ":=" constant -> push_ss
 
 var_dcl: simple_var
@@ -190,4 +194,4 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse(test20).pretty())
+print(parser.parse(test21).pretty())
