@@ -333,4 +333,30 @@ function main(): integer begin
 end 
 """
 
+test19 = """
+function main(): integer begin
+    a: long := 1;
+    while (a < 1000000000000000000000000) do begin
+        write(a);
+        write("\n");
+        a:= a * 4;
+    end
+end 
+"""
 
+test20 = """
+function main(): integer begin
+    n: long := 90;
+    fib: array [n] of long;
+    fib[0] := 1;
+    fib[1] := 1;
+    
+    i: integer := 2;
+    while (i < n) do begin
+        fib[i] := fib[i - 1] + fib[i - 2];
+        write(fib[i]);
+        write("\n");
+        i := i + 1;
+    end
+end
+"""

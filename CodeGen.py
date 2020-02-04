@@ -162,6 +162,10 @@ class CodeGen(Transformer):
         self.ss.append("BOOL")
         return "boolean"
 
+    def long_push(self, args):
+        self.ss.append("LONG")
+        return "long"
+
     def id(self, args):
         if args[0].value == 'true' or args[0].value == 'false':
             self.ss.append(Node(args[0].value, 'BOOL'))
@@ -233,6 +237,17 @@ class CodeGen(Transformer):
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)
             self.tmp.write(
                 '%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                    self.const_cnt))
+            self.tmp.write(
+                '%tmp_{} = call i32 (i8*, ...) @printf(i8* %str{}, {} {})\n'.format(self.temp_cnt[1], self.const_cnt,
+                                                                                    type_convert[opr_type], opr_name))
+            printf_return_var = str(self.temp_cnt[1])
+            self.temp_cnt[1] += 1
+            self.const_cnt += 1
+        elif opr_type == "LONG":
+            self.consts += '@.const{} = private constant [4 x i8] c"%ld\\00"\n'.format(self.const_cnt)
+            self.tmp.write(
+                '%str{0} = getelementptr inbounds [4 x i8], [4 x i8]* @.const{0}, i64 0, i64 0\n'.format(
                     self.const_cnt))
             self.tmp.write(
                 '%tmp_{} = call i32 (i8*, ...) @printf(i8* %str{}, {} {})\n'.format(self.temp_cnt[1], self.const_cnt,
@@ -446,7 +461,7 @@ class CodeGen(Transformer):
         return first_type, first_name, second_type, second_name, res_type
 
     def const_type_cast(self, res_type, opr_name, opr_type):
-        if res_type == 'SIGNED_INT':
+        if res_type == 'SIGNED_INT' or res_type == 'LONG':
             if opr_type == 'SIGNED_FLOAT':
                 return str(int(float(opr_name)))
             elif opr_type == 'BOOL':
@@ -512,9 +527,22 @@ class CodeGen(Transformer):
                 self.tmp.write(
                     '%tmp_{} = fptosi double {} to i32\n'.format(self.temp_cnt[temp_cnt_ptr],
                                                                  opr_name))
+            elif opr_type == "LONG":
+                self.tmp.write(
+                    '%tmp_{} = trunc {} {} to i32\n'.format(self.temp_cnt[temp_cnt_ptr],
+                                                           type_convert[opr_type], opr_name))
             else:
                 self.tmp.write(
                     '%tmp_{} = zext {} {} to i32\n'.format(self.temp_cnt[temp_cnt_ptr],
+                                                           type_convert[opr_type], opr_name))
+        elif res_type == 'LONG':
+            if opr_type == 'SIGNED_FLOAT':
+                self.tmp.write(
+                    '%tmp_{} = fptosi double {} to i64\n'.format(self.temp_cnt[temp_cnt_ptr],
+                                                                 opr_name))
+            else:
+                self.tmp.write(
+                    '%tmp_{} = zext {} {} to i64\n'.format(self.temp_cnt[temp_cnt_ptr],
                                                            type_convert[opr_type], opr_name))
         elif res_type == 'SIGNED_FLOAT':
             self.tmp.write(
@@ -573,6 +601,15 @@ class CodeGen(Transformer):
                 '%tmp_{} = {} i32 {}, {}\n'.format(self.temp_cnt[temp_cnt_ptr], op_type, first_name, second_name))
             self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "SIGNED_INT", "size": INT_SIZE,
                                                                      "name": 'tmp_{}'.format(self.temp_cnt[temp_cnt_ptr]),
+                                                                     "by_value": True}
+        elif res_type == 'LONG':
+            if op_type == 'div' or op_type == 'rem':
+                op_type = 's' + op_type
+            self.tmp.write(
+                '%tmp_{} = {} i64 {}, {}\n'.format(self.temp_cnt[temp_cnt_ptr], op_type, first_name, second_name))
+            self.ST()['{}__'.format(self.temp_cnt[temp_cnt_ptr])] = {"type": "LONG", "size": INT_SIZE,
+                                                                     "name": 'tmp_{}'.format(
+                                                                         self.temp_cnt[temp_cnt_ptr]),
                                                                      "by_value": True}
         elif res_type == 'SIGNED_FLOAT':
             self.tmp.write(

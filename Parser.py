@@ -145,6 +145,7 @@ HEX: "0x" SIGNED_INT
      | "string" -> string_push
      | "boolean" -> boolean_push
      | "character" -> character_push
+     | "long" -> long_push
 
 loop: make_begin_label_loop "while" "(" expr ")" branch_middle_loop "do" block -> jp_begin_loop
 make_begin_label_loop: -> make_begin_label_loop
@@ -189,10 +190,4 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse("""
-function main(): integer begin
-    n: real;
-    read(n);
-    write(n);
-end 
-""").pretty())
+print(parser.parse(test20).pretty())
