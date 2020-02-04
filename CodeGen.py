@@ -348,19 +348,17 @@ class CodeGen(Transformer):
             self.temp_cnt[1] += 1
             self.const_cnt += 1
         elif opr_type == 'ESCAPED_STRING':
-            self.consts += '@.const{} = private constant [3 x i8] c"%s\\00"\n'.format(self.const_cnt)
-            self.tmp.write('%str{0} = getelementptr inbounds [3 x i8], [3 x i8]* @.const{0}, i32 0, i32 0\n'.format(
-                self.const_cnt))
+            if 'declare i32 @gets(...)' not in self.dcls:
+                self.dcls += 'declare i32 @gets(...)\n'
             # define a temporary [512 x i8]
-            self.tmp.write('%tmp_{} = alloca [{} x i8], align 16'.format(self.temp_cnt[1], STRING_MAX_SIZE))
+            self.tmp.write('%tmp_{} = alloca [{} x i8], align 16\n'.format(self.temp_cnt[1], STRING_MAX_SIZE))
             self.temp_cnt[1] += 1
             self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* %tmp_{2}, i32 0, i32 0\n'.format(
                 self.temp_cnt[1], STRING_MAX_SIZE, self.temp_cnt[1]-1))
             self.temp_cnt[1] += 1
             # scanf
             self.tmp.write(
-                '%tmp_{} = call i32 (i8*, ...) @scanf(i8* %str{}, i8* %tmp_{})\n'.format(self.temp_cnt[1], self.const_cnt,
-                                                                                         self.temp_cnt[1] - 1))
+                '%tmp_{} = call i32 (...) @gets(i8* %tmp_{})\n'.format(self.temp_cnt[1], self.temp_cnt[1] - 1))
             scanf_return_var = str(self.temp_cnt[1])
             self.temp_cnt[1] += 1
             self.const_cnt += 1
