@@ -420,3 +420,120 @@ begin
     write(c[0]);
 end
 """
+
+test23 = """
+dp: array [10000] of long;
+
+function fib(n: integer): long begin
+    if (n = 1 or n = 2) then begin
+        temp: long := 1;
+        return temp;
+    end
+    if (~dp[n]) then begin
+        dp[n] := fib(n - 1) + fib(n - 2);
+        return dp[n];
+    end else begin
+        return dp[n];
+    end
+end
+
+function main(): integer begin
+    i: integer := 0;
+
+    while (i < 10000) do begin
+        dp[i] := 0;
+        i := i + 1;
+    end
+
+    n: integer;
+    read(n);
+    write(fib(n));
+end
+"""
+
+official_test_1 = """
+function main() : integer
+begin
+    write("hello world !") ;
+    return 0 ;
+end 
+"""
+
+official_test_2 = """
+function main() : integer
+begin
+    a : integer := 2 ;
+    b : integer := 3 ;
+    c : float ; 
+    c := b / a ; 
+    if c <> 1 then
+    begin 
+        write("not equal ! ") ;
+    end 
+    
+    return 0 ;
+end 
+"""
+
+official_test_3 = """
+
+procedure print(input : integer)
+begin
+    write("the number is : ") ;
+    write(input) ;
+    write("\n") ;
+end
+
+function main() : integer
+begin
+    index : integer := 0 ;
+
+    while index <> 20 do 
+    begin
+        print(index) ;
+        index := index + 1 ;
+    end 
+
+    return 0 ;
+end 
+
+"""
+
+official_test_4 = """
+
+function product(a : integer ; b : integer) : integer
+begin
+    result : integer := a * b ;
+    return result ;
+end
+
+procedure print(input : integer)
+begin
+    write("the number is : ") ;
+    write(input) ;
+    write("\n") ;
+end
+
+
+// this is a comment 
+<-- hi 
+i am a comment -->
+
+function main() : integer
+begin
+    
+    arr : array [10] of integer ;
+    index : integer := 0 ;
+
+    while index < 10 do 
+    begin
+        arr[index] := power(index, array[index]) ;
+        print(arr[index]) ;
+    end 
+
+    
+
+    return 0 ;
+end 
+
+"""

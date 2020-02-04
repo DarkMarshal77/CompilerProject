@@ -98,7 +98,7 @@ e_xor: e_xor "&" e_and -> bitwise_and
      | e_and
      
 // _______________________ >= > < <= == <>
-e_and: e_and "==" e_eq -> comp_eq
+e_and: e_and "=" e_eq -> comp_eq
      | e_and "<>" e_eq -> comp_ne
      | e_eq
 e_eq: e_eq ">" e_lg -> comp_gt
@@ -115,9 +115,10 @@ t: t "*" f -> mul
  | t "/" f -> div
  | t "%" f -> mod
  | f
-f: "-" p -> unary_sub
- | "~" p -> unary_not
+f: "-" f -> unary_sub
+ | "~" f -> unary_not
  | p
+// change right hand side f's to p to get error when typing ~~ 2 or -~2
 p: op
  | "(" expr ")"
 
@@ -194,4 +195,20 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse(test22).pretty())
+print(parser.parse("""
+function main(): integer begin
+    a:integer := 2;
+    b:integer := 3;
+    
+    c :real := 4.1;
+    d :real := 5.9;
+    
+    e : character := 'a';
+    f : character := 'b';
+    
+    g: boolean := true;
+    h: boolean := false;
+    
+    write();
+end
+""").pretty())

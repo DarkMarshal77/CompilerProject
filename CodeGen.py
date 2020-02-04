@@ -549,7 +549,7 @@ class CodeGen(Transformer):
                                                                  opr_name))
             else:
                 self.tmp.write(
-                    '%tmp_{} = zext {} {} to i64\n'.format(self.temp_cnt[temp_cnt_ptr],
+                    '%tmp_{} = sext {} {} to i64\n'.format(self.temp_cnt[temp_cnt_ptr],
                                                            type_convert[opr_type], opr_name))
         elif res_type == 'SIGNED_FLOAT':
             self.tmp.write(
@@ -1224,7 +1224,7 @@ class CodeGen(Transformer):
 
     def unary_sub(self, args):
         operand = self.ss.pop()
-        self.ss.append(Node(0, "SIGNED_INT"))
+        self.ss.append(Node(0, "LONG"))
         self.ss.append(operand)
         self.sub(args)
 
