@@ -192,32 +192,15 @@ class CodeGen(Transformer):
 
     def strlen(self):
         var = self.ss.pop()
-        opr_type, opr_name = self.operand_fetch(var, False)
+        opr_type, opr_name = self.operand_fetch(var, True)
 
         if opr_type != 'ESCAPED_STRING':
             raise Exception('strlen input must be String. input type: {}'.format(opr_type))
 
         if 'declare i64 @strlen(i8*)' not in self.dcls:
             self.dcls += 'declare i64 @strlen(i8*)\n'
-        if var.type == 'CNAME':
-            self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* {2}, i32 0, i32 0\n'.format(
-                self.temp_cnt[1], STRING_MAX_SIZE, opr_name))
-            self.temp_cnt[1] += 1
-            self.tmp.write('%tmp_{} = call i64 @strlen(i8* %tmp_{})\n'.format(self.temp_cnt[1], self.temp_cnt[1] - 1))
-            self.temp_cnt[1] += 1
-        else:
-            str_len = len(opr_name)
-            opr_name = self.replace_special_char(opr_name)
-            self.consts += '@.const{} = private constant [{} x i8] c"{}\\00"\n'.format(self.const_cnt,
-                                                                                       str_len + 1,
-                                                                                       opr_name)
-            self.tmp.write(
-                '%var_str_ptr{1} = getelementptr inbounds [{0} x i8], [{0} x i8]* @.const{1}, i32 0, i32 0\n'.format(
-                    str_len + 1, self.const_cnt))
-            self.tmp.write(
-                '%tmp_{} = call i64 @strlen(i8* %var_str_ptr{})\n'.format(self.temp_cnt[1], self.const_cnt))
-            self.temp_cnt[1] += 1
-            self.const_cnt += 1
+        self.tmp.write('%tmp_{} = call i64 @strlen(i8* {})\n'.format(self.temp_cnt[1], opr_name))
+        self.temp_cnt[1] += 1
 
         # cast i64 to i32
         self.tmp.write('%tmp_{} = trunc i64 %tmp_{} to i32\n'.format(self.temp_cnt[1], self.temp_cnt[1]-1))

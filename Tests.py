@@ -480,6 +480,15 @@ function main(): integer begin
 end
 """
 
+test25 = """
+function main(): integer begin
+    write(strlen("salam"));
+    s: string := "salam";
+    n: integer := strlen(s);
+    write(n);
+end
+"""
+
 official_test_1 = """
 function main() : integer
 begin
