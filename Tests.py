@@ -489,6 +489,82 @@ function main(): integer begin
 end
 """
 
+test26 = """
+procedure sort(n: integer; a: array [n] of integer) begin
+    i: integer := 0;
+    j: integer := 0;
+
+    while j < n do begin
+        i := 0;
+        while i < n - 1 do begin
+            if a[i] > a[i + 1] then begin
+                (a[i], a[i + 1]) := (a[i + 1], a[i]);
+            end
+            i := i + 1;
+        end
+        j := j + 1;
+    end
+end
+
+function main(): integer begin
+    n: integer := 10;
+    a: array [n] of integer;
+    a[0] := 10;
+    a[1] := -2;
+    a[2] := 3;
+    a[3] := 5;
+    a[4] := -4;
+    a[5] := 7;
+    a[6] := 6;
+    a[7] := 9;
+    a[8] := 4;
+    a[9] := -10;
+
+    sort(n, a);
+
+    i: integer := 0;
+    while i < n do begin
+        write(a[i]);
+        write("\n");
+        i := i + 1;
+    end
+end
+"""
+
+test27 = """
+procedure sort(n: integer; a: array [n] of character) begin
+    i: integer := 0;
+    j: integer := 0;
+
+    while j < n do begin
+        i := 0;
+        while i < n - 1 do begin
+            if a[i] > a[i + 1] then begin
+                (a[i], a[i + 1]) := (a[i + 1], a[i]);
+            end
+            i := i + 1;
+        end
+        j := j + 1;
+    end
+end
+
+function main(): integer begin
+    s: string := "hello 567 world! 123";
+    n: integer := strlen(s);
+    a: array [n] of character;
+    a := s;
+    
+    sort(n, a);
+
+    i: integer := 0;
+    while i < n do begin
+        write(a[i]);
+        write("\n");
+        i := i + 1;
+    end
+end
+"""
+
 official_test_1 = """
 function main() : integer
 begin
@@ -503,8 +579,7 @@ begin
     a : integer := 2 ;
     b : integer := 3 ;
     c : real ; 
-    c := b / a * 1.0; 
-    write(c);
+    c := b / a; 
     if c <> 1 then
     begin 
         write("not equal ! ") ;
