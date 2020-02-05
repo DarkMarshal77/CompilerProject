@@ -565,6 +565,60 @@ function main(): integer begin
 end
 """
 
+test28 = """
+procedure print_matrix(n: integer; m: integer; o: integer; a: array [n, m, o] of integer) begin
+    i: integer := 0;
+    j: integer := 0;
+    k: integer := 0;
+    
+    while i < n do begin
+        j := 0;
+        while j < m do begin
+            k := 0;
+            while k < o do begin
+                write(a[i, j, k]);
+                write("\t");
+                k := k + 1;
+            end
+            write("\n");
+            j := j + 1;
+        end
+        write("\n--------------------------------------------\n");
+        i := i + 1;
+    end
+end
+
+procedure assign_value(n: integer; m: integer; o: integer; a: array [n, m, o] of integer) begin
+    i: integer := 0;
+    j: integer := 0;
+    k: integer := 0;
+    
+    while i < n do begin
+        j := 0;
+        while j < m do begin
+            k := 0;
+            while k < o do begin
+                a[i, j, k] := i + j + k;
+                k := k + 1;
+            end
+            j := j + 1;
+        end
+        i := i + 1;
+    end
+end
+
+function main(): integer begin
+    n: integer := 2;
+    m: integer := 10;
+    o: integer := 20;
+    a: array [n, m, o] of integer;
+    
+    assign_value(n, m, o, a);
+    print_matrix(n, m, o, a);
+    
+end
+"""
+
 official_test_1 = """
 function main() : integer
 begin

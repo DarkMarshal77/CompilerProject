@@ -896,15 +896,26 @@ class CodeGen(Transformer):
         elif str(func_name) in self.ST_stack[0]:
             object_args = self.ST_stack[0][func_name.value]["args"]
             output_type = self.ST_stack[0][func_name.value]["out_type"]
+
+            if object_args.qsize() != args.qsize():
+                raise Exception('ERROR: Expected {} arguments in {} but received {} arguments'.format(object_args.qsize(), func_name, args.qsize()))
+
             signature = self.make_func_signature(output_type, object_args)
             output_string = "("
-            for arg in args.queue:
+            arg_list = list(args.queue)
+            object_args_list = list(object_args.queue)
+            for i in range(len(arg_list)):
+                arg = arg_list[i]
                 arg_descriptor = dict()
                 a_type, a_name = self.operand_fetch(arg, True, arg_descriptor)
+                a_type = type_convert[a_type]
                 if arg_descriptor:
-                    output_string = output_string + type_convert[a_type] + "* " + a_name + ", "
-                else:
-                    output_string = output_string + type_convert[a_type] + " " + a_name + ", "
+                    a_type += '*'
+
+                if a_type != object_args_list[i]:
+                    raise Exception('ERROR: Expected {} in argument {} of {} but received {}'.format(object_args_list[i], i+1, func_name, a_type))
+                output_string = output_string + a_type + " " + a_name + ", "
+
             output_string = output_string[:-2] + ")"
             if not list(args.queue):
                 output_string = "()"
@@ -1043,18 +1054,19 @@ class CodeGen(Transformer):
 
         temporary_arr_dims = arr_dims_value.copy()
         calc_arr_index_helper = []
-        while len(temporary_arr_dims) > 1:
-            calc_arr_index_helper.append(temporary_arr_dims.pop())
 
-            mul_res = '%tmp_' + str(self.temp_cnt[1])
-            self.tmp.write('{} = mul i32 {}, {}\n'.format(mul_res, calc_arr_index_helper[-1], temporary_arr_dims.pop()))
-
-            temporary_arr_dims.append(mul_res)
-            self.temp_cnt[1] += 1
-
-        var_ptr_name = 'tmp_' + str(self.temp_cnt[1])
-        self.temp_cnt[1] += 1
         if not self.in_func_def:
+            while len(temporary_arr_dims) > 1:
+                calc_arr_index_helper.append(temporary_arr_dims.pop())
+
+                mul_res = '%tmp_' + str(self.temp_cnt[1])
+                self.tmp.write('{} = mul i32 {}, {}\n'.format(mul_res, calc_arr_index_helper[-1], temporary_arr_dims.pop()))
+
+                temporary_arr_dims.append(mul_res)
+                self.temp_cnt[1] += 1
+
+            var_ptr_name = 'tmp_' + str(self.temp_cnt[1])
+            self.temp_cnt[1] += 1
             self.tmp.write('%{} = alloca {}, i32 {}, align 16\n'.format(var_ptr_name, type_convert[arr_type], temporary_arr_dims[0]))
             self.ST()[arr_name.value] = {"dims": arr_dims_value, "type": arr_type, 'calc_arr_index_helper': calc_arr_index_helper,
                                          "name": var_ptr_name, "by_value": False}
@@ -1158,6 +1170,19 @@ class CodeGen(Transformer):
 
         # addr calculation
         if not arr_descriptor['global']:
+            calc_arr_index_helper = []
+            if len(arr_descriptor['calc_arr_index_helper']) == 0:
+                temporary_arr_dims = arr_descriptor['dims'].copy()
+                while len(temporary_arr_dims) > 1:
+                    calc_arr_index_helper.append(temporary_arr_dims.pop())
+
+                    mul_res = '%tmp_' + str(self.temp_cnt[1])
+                    self.tmp.write('{} = mul i32 {}, {}\n'.format(mul_res, calc_arr_index_helper[-1], temporary_arr_dims.pop()))
+
+                    temporary_arr_dims.append(mul_res)
+                    self.temp_cnt[1] += 1
+                arr_descriptor['calc_arr_index_helper'] = calc_arr_index_helper
+
             calc_arr_index_helper = arr_descriptor['calc_arr_index_helper'].copy()
             while len(calc_arr_index_helper) > 0:
                 indice_type, indice_value = self.operand_fetch(indices.get(), True)
