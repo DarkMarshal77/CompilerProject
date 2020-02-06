@@ -331,24 +331,35 @@ class CodeGen(Transformer):
             self.temp_cnt[1] += 1
             self.const_cnt += 1
         elif opr_type == 'ESCAPED_STRING':
-            if 'declare i32 @gets(...)' not in self.dcls:
-                self.dcls += 'declare i32 @gets(...)\n'
             # define a temporary [512 x i8]
             self.tmp.write('%tmp_{} = alloca [{} x i8], align 16\n'.format(self.temp_cnt[1], STRING_MAX_SIZE))
             self.temp_cnt[1] += 1
             self.tmp.write('%tmp_{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* %tmp_{2}, i32 0, i32 0\n'.format(
                 self.temp_cnt[1], STRING_MAX_SIZE, self.temp_cnt[1]-1))
+            temp_str_name = '%tmp_' + str(self.temp_cnt[1])
             self.temp_cnt[1] += 1
+            # format
+            self.consts += '@.const{} = private constant [6 x i8] c"%[\\0A]s\\00"\n'.format(self.const_cnt)
+            self.tmp.write('%str{0} = getelementptr inbounds [6 x i8], [6 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                self.const_cnt))
+            self.const_cnt += 1
+            self.consts += '@.const{} = private constant [10 x i8] c"%{}[^\\0A]s\\00"\n'.format(self.const_cnt, STRING_MAX_SIZE-1)
+            self.tmp.write('%str{0} = getelementptr inbounds [10 x i8], [10 x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                self.const_cnt))
             # scanf
             self.tmp.write(
-                '%tmp_{} = call i32 (...) @gets(i8* %tmp_{})\n'.format(self.temp_cnt[1], self.temp_cnt[1] - 1))
+                '%tmp_{} = call i32 (i8*, ...) @scanf(i8* %str{}, i8* {})\n'.format(self.temp_cnt[1], self.const_cnt-1,
+                                                                                    temp_str_name))
+            self.temp_cnt[1] += 1
+            self.tmp.write(
+                '%tmp_{} = call i32 (i8*, ...) @scanf(i8* %str{}, i8* {})\n'.format(self.temp_cnt[1], self.const_cnt,
+                                                                                    temp_str_name))
             scanf_return_var = str(self.temp_cnt[1])
             self.temp_cnt[1] += 1
             self.const_cnt += 1
 
             # save [512 x i8] to destination
-            self.tmp.write('store i8* %tmp_{}, i8** {}\n'.format(
-                self.temp_cnt[1]-2, opr_name))
+            self.tmp.write('store i8* {}, i8** {}\n'.format(temp_str_name, opr_name))
             self.temp_cnt[1] += 1
         elif opr_type == 'BOOL':
             self.consts += '@.const{} = private constant [3 x i8] c"%d\\00"\n'.format(self.const_cnt)

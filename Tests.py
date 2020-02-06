@@ -619,6 +619,24 @@ function main(): integer begin
 end
 """
 
+test29 = """
+function main(): integer begin
+    a: integer;
+    read(a);
+    write(a);
+    write("\n");
+
+    e: string;
+    read(e);
+    write(e);
+    //write("\n");
+
+    read(e);
+    write(e);
+    write("\n");
+end
+"""
+
 official_test_1 = """
 function main() : integer
 begin

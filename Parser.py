@@ -196,4 +196,4 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
 
-print(parser.parse(test28).pretty())
+print(parser.parse(test29).pretty())
