@@ -629,7 +629,7 @@ function main(): integer begin
     e: string;
     read(e);
     write(e);
-    //write("\n");
+    write("\n");
 
     read(e);
     write(e);
