@@ -343,9 +343,9 @@ class CodeGen(Transformer):
             self.tmp.write('%str{0} = getelementptr inbounds [6 x i8], [6 x i8]* @.const{0}, i32 0, i32 0\n'.format(
                 self.const_cnt))
             self.const_cnt += 1
-            self.consts += '@.const{} = private constant [10 x i8] c"%{}[^\\0A]s\\00"\n'.format(self.const_cnt, STRING_MAX_SIZE-1)
-            self.tmp.write('%str{0} = getelementptr inbounds [10 x i8], [10 x i8]* @.const{0}, i32 0, i32 0\n'.format(
-                self.const_cnt))
+            self.consts += '@.const{} = private constant [{} x i8] c"%{}[^\\0A]s\\00"\n'.format(self.const_cnt, 7+len(str(STRING_MAX_SIZE-1)), STRING_MAX_SIZE-1)
+            self.tmp.write('%str{0} = getelementptr inbounds [{1} x i8], [{1} x i8]* @.const{0}, i32 0, i32 0\n'.format(
+                self.const_cnt, 7+len(str(STRING_MAX_SIZE-1))))
             # scanf
             self.tmp.write(
                 '%tmp_{} = call i32 (i8*, ...) @scanf(i8* %str{}, i8* {})\n'.format(self.temp_cnt[1], self.const_cnt-1,
