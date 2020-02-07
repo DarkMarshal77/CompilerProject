@@ -54,11 +54,14 @@ class CodeGen(Transformer):
 
     def global_def_assignment(self, args):
         rhs = self.ss.pop()
-        type = self.ss.pop()
+        lhs_type = self.ss.pop()
         lhs = self.ss.pop()
 
-        if type not in types:
-            raise Exception("ERROR: Invalid var type, type = {}".format(type))
+        if lhs_type not in types:
+            raise Exception("ERROR: Invalid var type, type = {}".format(lhs_type))
+
+        # if lhs_type != rhs.type:
+        #     raise Exception('ERROR: right hand side of inline-assignment must be of type {}'.format(lhs_type))
 
         if lhs.value in self.ST():
             if lhs.value in INIT_ST:
@@ -67,10 +70,10 @@ class CodeGen(Transformer):
                 print("Double declaration of '", lhs.value, "'")
             quit()
 
-        value_name = self.type_cast(type, rhs.value, rhs.type, True)
+        value_name = self.type_cast(lhs_type, rhs.value, rhs.type, True)
         var_ptr_name = str(self.temp_cnt[0])
         self.temp_cnt[0] += 1
-        if type == "ESCAPED_STRING":
+        if lhs_type == "ESCAPED_STRING":
             i = 0
             value_len = len(value_name)
             value_name = self.replace_special_char(value_name)
@@ -82,8 +85,8 @@ class CodeGen(Transformer):
             self.ST()[lhs.value] = {"type": "ESCAPED_STRING", "name": var_ptr_name, "by_value": False}
         else:
             self.tmp.write(
-                '@{} = global {} {}, align {}\n'.format(var_ptr_name, type_convert[type], value_name, size_map[type]))
-            self.ST()[lhs.value] = {"type": type, "size": size_map[type], "name": var_ptr_name, "by_value": False}
+                '@{} = global {} {}, align {}\n'.format(var_ptr_name, type_convert[lhs_type], value_name, size_map[lhs_type]))
+            self.ST()[lhs.value] = {"type": lhs_type, "size": size_map[lhs_type], "name": var_ptr_name, "by_value": False}
 
     def global_def(self, args):
         type = self.ss.pop()
@@ -781,6 +784,40 @@ class CodeGen(Transformer):
     def pop_ss_push_q(self, args):
         temp = self.ss.pop()
         self.ss[-1].put(temp)
+
+    def inline_assignment(self, args):
+        rhs = self.ss.pop()
+        lhs = self.ss.pop()
+
+        if lhs.type != 'CNAME':
+            raise Exception('Left-hand-side must be a variable.')
+
+        lhs_type, lhs_name = self.operand_fetch(lhs, False)
+        rhs_type, rhs_name = self.operand_fetch(rhs, True)
+
+        if lhs_type != rhs_type:
+            raise Exception('ERROR: right hand side of inline-assignment must be of type {}'.format(lhs_type))
+
+        # todo uncomment
+        # real_rhs_type = rhs.type
+        # if rhs.type == 'CNAME':
+        #     for st in self.ST_stack:
+        #         if rhs in st:
+        #             real_rhs_type = st[rhs.value]['type']
+        # if lhs_type == real_rhs_type:
+        #     self.ss.append(Node(1, 'SIGNED_INT'))
+        # else:
+        #     self.ss.append(Node(0, 'SIGNED_INT'))
+
+        if lhs_name[0] == '@' and lhs_type == 'ESCAPED_STRING':
+            self.tmp.write('%tmp_{} = bitcast [{} x i8]* {} to i8*\n'.format(self.temp_cnt[1], STRING_MAX_SIZE, lhs_name))
+            lhs_name = '%tmp_'+str(self.temp_cnt[1])
+            self.temp_cnt[1] += 1
+            rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
+            self.tmp.write('call i8* @strcpy(i8* {}, i8* {})\n'.format(lhs_name, rhs_name))
+        else:
+            rhs_name = self.type_cast(lhs_type, rhs_name, rhs_type, False if rhs.type == 'CNAME' else True)
+            self.tmp.write('store {0} {1}, {0}* {2}\n'.format(type_convert[lhs_type], rhs_name, lhs_name))
 
     def assignment(self, args):
         rhs = self.ss.pop()

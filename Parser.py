@@ -3,6 +3,11 @@ from lark import Lark
 from Tests import *
 from CodeGen import CodeGen
 
+# avoid type casting for inline assign
+# assignment_prime: inline_assignment
+#                 | -> pop_ss
+# inline_assignment: ":=" expr -> inline_assignment
+
 grammar = """
 start: func_def start
      | proc_def start
