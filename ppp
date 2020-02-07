@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
 NAME=${1?Error: no input file given}
 
-python3 Parser.py $NAME && clang LLVM/main.ll && ./a.out < Samples/$NAME.in
+python3 Parser.py $NAME
+clang LLVM/main.ll -o Samples/a.out
+OUT=$(Samples/a.out < Samples/$NAME.in)
+echo -e $OUT
+echo -e $OUT > Samples/Outputs/$NAME.out
