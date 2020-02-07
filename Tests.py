@@ -629,7 +629,7 @@ function main(): integer begin
     e: string;
     read(e);
     write(e);
-    //write("\n");
+    write("\n");
 
     read(e);
     write(e);
@@ -651,14 +651,15 @@ begin
     a : integer := 2 ;
     b : integer := 3 ;
     c : real ; 
-    c := b / a; 
+    c := b / a ; 
     if c <> 1 then
     begin 
         write("not equal ! ") ;
-    end 
+    end;
     
     return 0 ;
 end 
+
 """
 
 official_test_3 = """
@@ -678,7 +679,7 @@ begin
     begin
         print(index) ;
         index := index + 1 ;
-    end 
+    end; 
 
     return 0 ;
 end 
@@ -686,7 +687,6 @@ end
 """
 
 official_test_4 = """
-
 function product(a : integer ; b : integer) : integer
 begin
     result : integer := a * b ;
@@ -717,10 +717,20 @@ begin
         arr[index] := product(index, arr[index]) ;
         print(arr[index]) ;
         index := index + 1;
-    end 
+    end; 
 
-    
+    return 0 ;
+end 
+"""
 
+official_test_5 = """
+function main() : integer
+begin
+    a : integer ;
+    b : integer ;
+    read(a);
+    read(b);
+    write(a+b) ;
     return 0 ;
 end 
 

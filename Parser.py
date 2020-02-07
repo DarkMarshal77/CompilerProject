@@ -1,3 +1,4 @@
+import sys
 from lark import Lark
 from Tests import *
 from CodeGen import CodeGen
@@ -194,6 +195,10 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 %ignore COMMENT
 """
 
-parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
+test_number = sys.argv[-1]
+input_file = open("Samples/{}.ppp".format(test_number), "r")
+input_program = input_file.read()
 
-print(parser.parse(test29).pretty())
+parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
+print(parser.parse(input_program).pretty())
+print("Parsing Done\n_______________________________________________________")
