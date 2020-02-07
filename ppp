@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+NAME=${1?Error: no input file given}
+
+python3 Parser.py $NAME && clang LLVM/main.ll && ./a.out < Samples/$NAME.in
