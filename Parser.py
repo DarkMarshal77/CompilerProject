@@ -200,13 +200,10 @@ COMMENT: "<--" /(.|\\v|\\t|\\n|\\r|\\f)+/ "-->"
 %ignore COMMENT
 """
 
-# test_number = sys.argv[-1]
-# input_file = open("Samples/{}.ppp".format(test_number), "r")
-# input_program = input_file.read()
-#
-# parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
-# print(parser.parse(input_program).pretty())
-# print("Parsing Done\n_______________________________________________________")
+test_number = sys.argv[-1]
+input_file = open("Samples/{}.ppp".format(test_number), "r")
+input_program = input_file.read()
 
 parser = Lark(grammar, parser="lalr", transformer=CodeGen(), debug=False)
-print(parser.parse(official_test_4).pretty())
+print(parser.parse(input_program).pretty())
+print("Parsing Done\n_______________________________________________________\n")
