@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+COUNT=${1?Error: no input file given}
+
+for i in `seq 1 $COUNT`
+ do
+ ./ppp $i;
+ done
